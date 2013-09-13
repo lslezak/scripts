@@ -8,7 +8,7 @@
 # if a package is modified in 'next_opensuse' branch and submitted
 # manually then remove it from the list so the changes are not lost!
 PACKAGES = [ "autoyast2", "libstorage", "libyui", "libyui-bindings",
-  "libyui-doc", "libyui-ncurses", "libyui-ncurses-pkg", "libyui-qt",
+  "libyui-ncurses", "libyui-ncurses-pkg", "libyui-qt",
   "libyui-qt-pkg", "perl-Bootloader", "snapper", "yast2", "yast2-add-on",
   "yast2-backup", "yast2-bootloader", "yast2-branding-openSUSE",
   "yast2-ca-management", "yast2-control-center", "yast2-control-center-gnome",
