@@ -31,15 +31,12 @@ PACKAGES = [ "autoyast2", "libstorage", "libyui", "libyui-bindings",
   "yast2-tune", "yast2-update", "yast2-users", "yast2-vm", "yast2-xml",
   "yast2-x11", "yast2-ycp-ui-bindings" ]
 
-
+# OBS does not trigger rebuild if the package is not changed
+# so we can blindly copy all packages without any check for changes
 PACKAGES.each_with_index do |pkg, i|
-
   puts "[#{i+1}/#{PACKAGES.size} #{(i+1)*100/PACKAGES.size}%]  Copying package #{pkg} ..."
-
   `osc copypac YaST:Head #{pkg} YaST:Head:installer`
-
 end
 
 puts "Finished"
-
 
