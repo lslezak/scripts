@@ -26,7 +26,7 @@ PACKAGES = [ "autoyast2", "libstorage", "libyui", "libyui-bindings",
   "yast2-product-creator", "yast2-proxy", "yast2-restore", "yast2-ruby-bindings",
   "yast2-runlevel", "yast2-samba-client", "yast2-samba-server", "yast2-scanner",
   "yast2-security", "yast2-services-manager", "yast2-schema", "yast2-slide-show",
-  "yast2-slp", "yast2-slp-server", "yast2-snapper", "yast2-sound",
+  "yast2-slp", "yast2-slp-server", "yast2-snapper", "yast2-sound", "yast2-squid",
   "yast2-storage", "yast2-sysconfig", "yast2-testsuite", "yast2-tftp-server",
   "yast2-transfer", "yast2-tune", "yast2-update", "yast2-users", "yast2-vm", "yast2-xml",
   "yast2-x11", "yast2-ycp-ui-bindings" ]
