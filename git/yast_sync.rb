@@ -93,6 +93,9 @@ repos.each do |repo|
     `git clone git@github.com:yast/#{repo}.git`
   end
 
+  # add your code here to run it in each git repo:
+  # Dir.chdir repo do
+  #   `your command here`
+  # end
 end
-
 
