@@ -59,7 +59,6 @@ IGNORE = [
 "yast-phone-services",
 "yast-power-management",
 "yast-profile-manager",
-"yast-registration",
 "yast-repair",
 "yast-restore",
 "yast-squidguard",
@@ -80,17 +79,19 @@ repos = repos - IGNORE
 puts "Ignoring #{IGNORE.size} obsoleted repositories, using #{repos.size} repositories"
 
 repos.each do |repo|
-  if File.exist? repo
-    puts "Updating #{repo}..."
+  dir = repo.sub(/^yast-/, "")
 
-    Dir.chdir repo do
+  if File.exist? dir
+    puts "Updating #{dir}..."
+
+    Dir.chdir dir do
       `git checkout -q master`
       `git fetch --prune`
       `git pull --rebase`
     end
   else
-    puts "Cloning #{repo}..."
-    `git clone git@github.com:yast/#{repo}.git`
+    puts "Cloning #{dir}..."
+    `git clone git@github.com:yast/#{repo}.git #{dir}`
   end
 
   # add your code here to run it in each git repo:
