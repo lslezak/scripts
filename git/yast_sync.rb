@@ -27,6 +27,7 @@ repos = read_yast_cache
 puts "Found #{repos.size} Yast repositories"
 
 IGNORE = [
+"skelcd-control-SLES-for-VMware",
 "yast-backup",
 "yast-bluetooth",
 "yast-boot-server",
