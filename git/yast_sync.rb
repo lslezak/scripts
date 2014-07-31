@@ -28,6 +28,7 @@ puts "Found #{repos.size} Yast repositories"
 
 IGNORE = [
 "skelcd-control-SLES-for-VMware",
+"rubygem-scc_api",
 "yast-backup",
 "yast-bluetooth",
 "yast-boot-server",
