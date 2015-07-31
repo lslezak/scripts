@@ -80,19 +80,22 @@ IGNORE = [
 repos = repos - IGNORE
 puts "Ignoring #{IGNORE.size} obsoleted repositories, using #{repos.size} repositories"
 
-repos.each do |repo|
+repos.sort!
+
+repos.each_with_index do |repo, index|
   dir = repo.sub(/^yast-/, "")
 
-  if File.exist? dir
-    puts "Updating #{dir}..."
+  if File.exist?(dir)
+    puts "[#{index + 1}/#{repos.size}] Updating #{dir}..."
 
     Dir.chdir dir do
+      `git reset --hard`
       `git checkout -q master`
       `git fetch --prune`
       `git pull --rebase`
     end
   else
-    puts "Cloning #{dir}..."
+    puts "[#{index + 1}/#{repos.size}] Cloning #{dir}..."
     `git clone git@github.com:yast/#{repo}.git #{dir}`
   end
 
