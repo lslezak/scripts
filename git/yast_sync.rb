@@ -109,6 +109,9 @@ Threading.in_parallel(repos) do |repo|
   if File.exist?(dir)
     puts "Updating #{dir}..."
 
+    # make sure we do not loose any not submitted work by accident
+    run_in(dir, "git stash save")
+
     run_in(dir, "git reset --hard")
     run_in(dir, "git checkout -q master")
     run_in(dir, "git fetch --prune")
