@@ -18,8 +18,6 @@ require "jenkins_api_client"
 
 JENKINS_URL = "https://ci.opensuse.org"
 
-exit 0
-
 puts "Reading YaST Jenkins jobs at #{JENKINS_URL}..."
 jenkins = JenkinsApi::Client.new(server_url: JENKINS_URL,
   username: ENV["JENKINS_USER"], password: ENV["JENKINS_PASSWORD"])
