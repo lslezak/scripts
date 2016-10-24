@@ -26,8 +26,8 @@ class Threading
       running_threads = []
 
       tasks.each do |task|
-        running_threads << Thread.new(task) do |args|
-          args.each { |arg| yield arg }
+        running_threads << Thread.new(task) do |task_args|
+          task_args.each { |a| yield a }
         end
       end
 
@@ -56,7 +56,5 @@ class Threading
       arr.each_slice((arr.size / parts.to_f).ceil) { |part| ret << part } unless arr.empty?
       ret
     end
-
   end
-
 end
