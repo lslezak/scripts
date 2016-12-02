@@ -5,8 +5,8 @@ This is an importer for importing the YaST posts from https://lizards.opensuse.o
 
 # Pre-requisites
 
-- Ruby + Bundler (`zypper in 'rubygem(bundler)'`)
-- HTML to Markdown convertor (`zypper in python-html2text python-setuptools`)
+- Ruby
+- Bundler (`zypper in 'rubygem(bundler)'`)
 
 # Process
 
