@@ -5,8 +5,8 @@ This is an importer for importing the YaST posts from https://lizards.opensuse.o
 
 # Pre-requisites
 
-- Ruby + Bundler
-- HTML to Markdown convertor (`zypper in python-html2text`)
+- Ruby + Bundler (`zypper in 'rubygem(bundler)'`)
+- HTML to Markdown convertor (`zypper in python-html2text python-setuptools`)
 
 # Process
 
@@ -25,8 +25,8 @@ Specifically these old feeds were used (saved to `feed*.xml` files):
 # Starting the Import
 
 ```sh
-bundle install --path vendor/bundle
+bundle install --path .vendor/bundle
 bundle exec ruby ./lizard_importer.rb
 ```
 
-The posts are saved into `_posts` directory
+The converted posts are saved into `_posts` directory.

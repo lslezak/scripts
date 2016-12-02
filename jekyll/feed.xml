@@ -1,0 +1,849 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	>
+
+<channel>
+	<title>openSUSE Lizards</title>
+	<atom:link href="https://lizards.opensuse.org/feed/" rel="self" type="application/rss+xml" />
+	<link>https://lizards.opensuse.org</link>
+	<description>Blogs and Ramblings of the openSUSE Members</description>
+	<lastBuildDate>Fri, 02 Dec 2016 14:13:07 +0000</lastBuildDate>
+	<language>en-US</language>
+	<sy:updatePeriod>hourly</sy:updatePeriod>
+	<sy:updateFrequency>1</sy:updateFrequency>
+	<generator>https://wordpress.org/?v=4.6.1</generator>
+	<item>
+		<title>Highlights of YaST development sprint 28</title>
+		<link>https://lizards.opensuse.org/2016/12/02/highlights-of-yast-development-sprint-28/</link>
+		<comments>https://lizards.opensuse.org/2016/12/02/highlights-of-yast-development-sprint-28/#respond</comments>
+		<pubDate>Fri, 02 Dec 2016 14:13:07 +0000</pubDate>
+		<dc:creator><![CDATA[Yast Team]]></dc:creator>
+				<category><![CDATA[Base System]]></category>
+		<category><![CDATA[Distribution]]></category>
+		<category><![CDATA[Factory]]></category>
+		<category><![CDATA[Network]]></category>
+		<category><![CDATA[Programming]]></category>
+		<category><![CDATA[Systems Management]]></category>
+		<category><![CDATA[Usability]]></category>
+		<category><![CDATA[YaST]]></category>
+
+		<guid isPermaLink="false">http://lizards.opensuse.org/?p=12141</guid>
+		<description><![CDATA[November is over, Santa Claus elves start to stress and the YaST team brings you one of the last reports of 2016. Let&#8217;s see what&#8217;s new in YaSTland. Harder to ignore installation warning The &#8220;installation settings&#8221; summary screen usually reports some non-critical errors displayed as a red text. Although the installation can proceed despite those [&#8230;]]]></description>
+				<content:encoded><![CDATA[<p>November is over, Santa Claus elves start to stress and the YaST team brings you one of the last reports of 2016. Let&#8217;s see what&#8217;s new in YaSTland.</p>
+<h3>Harder to ignore installation warning</h3>
+<p>The &#8220;installation settings&#8221; summary screen usually reports some non-critical errors displayed as a red text. Although the installation can proceed despite those errors, they are usually serious enough to lead to problems. That&#8217;s why we decided to introduce a change to highlight them a little bit more, making them harder to overlook.</p>
+<p>The following screenshot shows the newly introduced confirmation dialog, presented before proceeding with installation.</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/11/warn.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/11/warn-300x227.png" alt="Preventing users to shoot their feet" width="300" height="227" class="aligncenter size-medium wp-image-12152" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/11/warn-300x227.png 300w, https://lizards.opensuse.org/wp-content/uploads/2016/11/warn-768x582.png 768w, https://lizards.opensuse.org/wp-content/uploads/2016/11/warn-1024x776.png 1024w, https://lizards.opensuse.org/wp-content/uploads/2016/11/warn.png 1027w" sizes="(max-width: 300px) 100vw, 300px" /></a></p>
+<h3>Make DHCLIENT_SET_HOSTNAME configurable on a per-interface basis</h3>
+<p>But that&#8217;s not the only usability-oriented enhancement on this sprint. We also reworked a bit the network configuration dialog.</p>
+<p>For home users is very common to use a fixed hostname -set during installation- for our beloved linux box. But in some circumstances it&#8217;s better to set the hostname of the machine dynamically using DHCP, something YaST has always allowed to do by just ticking a checkbox that used to be in the network configuration screen. See &#8220;Change Hostname via DHCP&#8221; below.</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/12/old-network.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/12/old-network-300x225.png" alt="The old network settings screen" width="300" height="225" class="aligncenter size-medium wp-image-12162" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/12/old-network-300x225.png 300w, https://lizards.opensuse.org/wp-content/uploads/2016/12/old-network.png 640w" sizes="(max-width: 300px) 100vw, 300px" /></a></p>
+<p>That checkbox used to modify the system-wide variable <code>DHCLIENT_SET_HOSTNAME</code>, which was fine in scenarios in which only one of the network interfaces was configured via DHCP. But with several network interfaces connected to different DHCP-enabled networks, some problems arose.</p>
+<p>During installation, if network configuration is used, <a href="https://en.opensuse.org/SDB:Linuxrc">Linuxrc</a> creates the <code>ifcfg</code> files with <code>DHCLIENT_SET_HOSTNAME='yes'</code> for all of the enabled or configured interfaces and this value has precedence over the global one.</p>
+<p>So the main problem was that YaST only allowed us to modify the global variable and setting it to &#8216;no&#8217; did nothing because it was enabled for some interface.</p>
+<p>During this sprint we have fixed that and now the user interface offers the possibility of choosing which DHCP interface will be used to decide the hostname.</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/12/new-network.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/12/new-network-300x225.png" alt="The new network settings screen" width="300" height="225" class="aligncenter size-medium wp-image-12163" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/12/new-network-300x225.png 300w, https://lizards.opensuse.org/wp-content/uploads/2016/12/new-network.png 640w" sizes="(max-width: 300px) 100vw, 300px" /></a></p>
+<p>Apart from choosing one of the existing interfaces, the new setting can also be set to &#8216;no&#8217; or to &#8216;any&#8217;. In any case, YaST will always configure the system-wide options and the interface specific ones in a consistent way, so the behavior is always predictable.</p>
+<p>But YaST is not the only way of configuring the network, so it&#8217;s always possible to have an unpredictable configuration. Fortunately, those potentially problematic scenarios will be detected by YaST and reported to the user.</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/12/any-network.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/12/any-network-300x225.png" alt="Detecting dangerous scenarios in network settings" width="300" height="225" class="aligncenter size-medium wp-image-12164" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/12/any-network-300x225.png 300w, https://lizards.opensuse.org/wp-content/uploads/2016/12/any-network.png 640w" sizes="(max-width: 300px) 100vw, 300px" /></a></p>
+<h3>Partitioning in CASP</h3>
+<p>In the <a href="https://lizards.opensuse.org/2016/11/10/highlights-of-yast-development-sprint-27/">previous report</a> we already explained how are we improving the installer to support the definition of the ultra-streamlined installation process of SUSE CASP, the new <a href="http://kubernetes.io/">Kubernetes</a> based member of the SUSE family.</p>
+<p>In this sprint we introduced several additional changes to enable a different partitioning approach, more guided and automatic than ever. In a CASP node it makes no sense to use the advanced settings offered by our storage proposal, like encryption or LVM. Moreover, CASP relies on Btrfs to provide some of its cool and advanced features, like transactional updates.</p>
+<p>As a result, although the regular SUSE and openSUSE releases will keep offering all the current possibilities in the same way than ever, in CASP the partitioning step will be skipped and the automatically calculated proposal will be simply displayed in the installation summary.</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/12/casp-installation-summary.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/12/casp-installation-summary-300x186.png" alt="The new CASP installation summary" width="300" height="186" class="aligncenter size-medium wp-image-12170" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/12/casp-installation-summary-300x186.png 300w, https://lizards.opensuse.org/wp-content/uploads/2016/12/casp-installation-summary-768x477.png 768w, https://lizards.opensuse.org/wp-content/uploads/2016/12/casp-installation-summary-1024x636.png 1024w, https://lizards.opensuse.org/wp-content/uploads/2016/12/casp-installation-summary.png 1356w" sizes="(max-width: 300px) 100vw, 300px" /></a></p>
+<p>Clicking on the proposal will allow to re-target the installation to a different disk (or disks) in a similar way than the regular installer, but the options will be more limited. Again, no easy way to use LVM, encryption, separate home or any file system type other than Btrfs.</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/12/casp-select-partitions.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/12/casp-select-partitions-300x186.png" alt="Selecting the partitions in CASP, no proposal settings button" width="300" height="186" class="aligncenter size-medium wp-image-12171" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/12/casp-select-partitions-300x186.png 300w, https://lizards.opensuse.org/wp-content/uploads/2016/12/casp-select-partitions-768x477.png 768w, https://lizards.opensuse.org/wp-content/uploads/2016/12/casp-select-partitions-1024x635.png 1024w, https://lizards.opensuse.org/wp-content/uploads/2016/12/casp-select-partitions.png 1352w" sizes="(max-width: 300px) 100vw, 300px" /></a></p>
+<p>The expert partitioner is still available during CASP installation, but using it will show an extra warning, since it implies a much bigger risk than using it in a regular SUSE or openSUSE system.</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/12/casp-expert-partitioner-warning.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/12/casp-expert-partitioner-warning-300x186.png" alt="Expert partitioner warning in CASP" width="300" height="186" class="aligncenter size-medium wp-image-12172" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/12/casp-expert-partitioner-warning-300x186.png 300w, https://lizards.opensuse.org/wp-content/uploads/2016/12/casp-expert-partitioner-warning-768x477.png 768w, https://lizards.opensuse.org/wp-content/uploads/2016/12/casp-expert-partitioner-warning-1024x636.png 1024w, https://lizards.opensuse.org/wp-content/uploads/2016/12/casp-expert-partitioner-warning.png 1352w" sizes="(max-width: 300px) 100vw, 300px" /></a></p>
+<h3>Improved debugger integration</h3>
+<p>We have improved the Ruby debugger integration in YaST. So far you could start the debugger using the <code>y2debugger=1</code> boot option or by setting the <code>Y2DEBUGGER=1</code> environment variable. The new feature allows starting the Ruby debugger also later when the YaST module is already running.</p>
+<p>Simply press the <code>Shift+Ctrl+Alt+D</code> keyboard shortcut (<code>D</code> as debug) and it will start the Ruby debugger. It works during installation and also in installed system (just make sure the <code>byebug</code> Ruby gem is installed).</p>
+<p>Unfortunately this new feature works only in the Qt UI, the ncurses UI is not supported (currently it does not handle the debugging keyboard shortcut at all).</p>
+<p>After pressing the keyboard shortcut the debugger window will pop up:</p>
+<p><img src="//lizards.opensuse.org/wp-content/uploads/2016/11/debugger.gif" alt="New debugger integration" /></p>
+<h3>Storage reimplementation: it&#8217;s alive!</h3>
+<p>It took us one more sprint than originally expected, but finally we can say the testing ISO for the new storage stack is fully installable.</p>
+<p>We fixed the UEFI + MBR partition table scenario we already had almost working in the previous sprint (turns out it was not that broken in Tumbleweed after all) and we adapted yast2-bootloader to be also able to deal with legacy (i.e. no UEFI) booting using the new storage stack.</p>
+<p>As a nice result, our testing ISO can be used to install a perfectly functional system in both UEFI or legacy systems with the only requirement of having a pre-existing MBR partition table in the disk. It only shows a couple of error pop-ups related to the calculation of the proposal of software to be installed, but nothing that would prevent you from replacing whatever operating system you have with a new shiny openSUSE-based experiment.</p>
+<p>This milestone opens the door to start testing the new stack with openQA, the same system that helps to guarantee the robustness of all the recent SUSE and openSUSE versions.</p>
+<h3>Storage reimplementation: preparations for the storage proposal</h3>
+<p>Now that yast2-bootloader starts to be ready to work with the new storage stack in more and more scenarios, it&#8217;s time to adapt the only component that still complains during the installation. </p>
+<p>In order to make that task doable during the next sprint, we invested some time in this sprint analyzing the interaction between the software proposal calculator and the old storage layer. The outcome was <a href="https://github.com/yast/yast-storage-ng/blob/master/doc/software-requirements.md">a small document</a> detailing what needs to be adapted in the proposal and in the new stack. The perfect input for a task in the next sprint.</p>
+<h3>Help for power-users with short memory</h3>
+<p>Our beloved YaST is packed with <a href="https://en.opensuse.org/SDB:YaST_tricks">magic tricks</a> below the surface. Many of them are very useful to debug installation problems or to better understand how the YaST internals work. Unfortunately developers tend to not be that good at blindly memorizing stuff and the functionality is so well hidden that most newcomers would have hard times finding it&#8230; until now.</p>
+<p>We have added a couple of new keyboard shortcuts to show a summary of all the advanced hotkeys, so now you only have to remember one key combination instead of a dozen of them. In both text (ncurses) and graphical (Qt) mode, it will be enough to press <code>shift+F1</code> to get the advanced help displayed below. Since some terminal emulators could already use that combination, <code>ctrl+D F1</code> can also be used in the ncurses interface as an alternative.</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/12/hotkey-help-qt.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/12/hotkey-help-qt-300x268.png" alt="Advanced Hotkeys help dialog" width="300" height="268" class="aligncenter size-medium wp-image-12167" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/12/hotkey-help-qt-300x268.png 300w, https://lizards.opensuse.org/wp-content/uploads/2016/12/hotkey-help-qt.png 589w" sizes="(max-width: 300px) 100vw, 300px" /></a></p>
+<h3>Contributions keep coming!</h3>
+<p>As we have already mentioned in previous sprint reports, an important part of our daily job as open source developers is helping casual (and not so casual) contributors to bring their ideas and code into YaST and related projects.</p>
+<p>This time that (hopefully not casual) contributor was <a href="https://github.com/dwaas">Devin Waas</a>, who wanted to improve the installation to make the life of cloud-lovers easier.</p>
+<p>For cloud guys out there retrieving logs of a failed installation <del>is</del> was a huge problem. Now, thanks to Devin, all you need is a running a rsyslog server and you&#8217;ll be able to easily access your installation logs from there.</p>
+<p><img class="aligncenter" src="//lizards.opensuse.org/wp-content/uploads/2016/11/dvw.png" alt="A drawing is worth a thousand words" /></p>
+<p>As a matter of fact, the newest Tumbleweed release allows us to specify the IP address of a remote server from the bootloader through the &#8220;Loghost flag&#8221;. Linuxrc will take care of setting up a UDP broadcast for dmesg contents and YaST installation logs.</p>
+<p>This is just a first step. Devin promised further improvements of our newly implemented remote logging system. And he codes better than he draws, so stay tuned! </p>
+<h3>Storage reimplementation: LVM-based proposal</h3>
+<p>As we already mentioned in previous reports, when we started to develop the partitioning proposal we first focused in the scenario of a partition-based proposal with one or several MBR-style partition tables. That looked like the most complex scenario due to the limited number of primary partitions, the alignment problems, the overhead introduced by the <a href="https://en.wikipedia.org/wiki/Extended_boot_record">EBR (extended boot record)</a> of every logical partition and so on.</p>
+<p>A couple of sprints ago, we got that working so we started to work on the LVM-based proposal. It took a little bit longer than expected but now we are able to generate LVM-based proposals for almost every possible scenario. The goal was to have them working in our mocked test cases. So probably the new LVM-based proposal cannot still be used to install a fully functional system, but it is backed by a full load of tests that prove we can handle many situations, from trivial to really tricky ones&#8230; and believe us, things can get quite tricky if you mix logical partitions with their EBR overhead and LVM volumes with their <a href="http://www.tldp.org/HOWTO/LVM-HOWTO/pe.html">PE size</a> rounding and their <a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/5/html/Logical_Volume_Manager_Administration/lvm_metadata.html">metadata</a> overhead.</p>
+<h3>Bugs, bugs, bugs</h3>
+<p>In this sprint we kept the already commented approach of making the fix of low-priority and small bugs part of the Scrum process. As a result we accounted for approximately 50 deaths of those annoying creatures.</p>
+<h3>Conclusion</h3>
+<p>Looking at the report, we could say it was a quite successful sprint. But to be honest we were aiming even higher. Quite some interesting PBIs (features or bug-fixes in Scrum jargon) were almost done at the end of the sprint. But following Scrum philosophy, we never blog about almost-done stuff.</p>
+<p>Thus, if nothing goes wrong things will be even better in the next report in three weeks. So have a lot of fun trying the new stuff and stay tuned for more!</p>
+]]></content:encoded>
+			<wfw:commentRss>https://lizards.opensuse.org/2016/12/02/highlights-of-yast-development-sprint-28/feed/</wfw:commentRss>
+		<slash:comments>0</slash:comments>
+		</item>
+		<item>
+		<title>openSUSE project presentation at school, Nov 24th, 2016</title>
+		<link>https://lizards.opensuse.org/2016/11/29/opensuse-project-presentation-at-school-nov-24th-2016/</link>
+		<comments>https://lizards.opensuse.org/2016/11/29/opensuse-project-presentation-at-school-nov-24th-2016/#respond</comments>
+		<pubDate>Tue, 29 Nov 2016 20:12:46 +0000</pubDate>
+		<dc:creator><![CDATA[Efstathios Iosifidis]]></dc:creator>
+				<category><![CDATA[Ambassadors]]></category>
+		<category><![CDATA[GNOME]]></category>
+		<category><![CDATA[Marketing]]></category>
+		<category><![CDATA[Leap]]></category>
+		<category><![CDATA[openSUSE]]></category>
+		<category><![CDATA[project]]></category>
+		<category><![CDATA[school]]></category>
+		<category><![CDATA[Tumbleweed]]></category>
+
+		<guid isPermaLink="false">http://lizards.opensuse.org/?p=12138</guid>
+		<description><![CDATA[On November 16th there was the release of openSUSE Leap 42.2. On November 24th, I had the opportunity to present openSUSE Project at school. I was asked to make an introduction to FLOSS in general and more specific about openSUSE Project. The school was for middle aged people, for persons who quited school to work [&#8230;]]]></description>
+				<content:encoded><![CDATA[<p><a href="https://dl.dropboxusercontent.com/u/20413076/opensuse/epal_24_nov/group.jpg" target="1"><img src="https://dl.dropboxusercontent.com/u/20413076/opensuse/epal_24_nov/group.jpg" width="70%" height="70%"></a></p>
+<p>On November 16th there was the release of <a href="https://news.opensuse.org/2016/11/16/optimal-release-for-linux-professionals-arrives-with-opensuse-leap-42-2/" target="1">openSUSE Leap 42.2</a>. On November 24th, I had the opportunity to present openSUSE Project at school.</p>
+<p>I was asked to make an introduction to FLOSS in general and more specific about openSUSE Project. The school was for middle aged people, for persons who quited school to work and conftibute financially to their families. There were 3 classes that they taught something computer related. It was a great opportunity for them to learn what FLOSS is and what makes openSUSE great Linux distro.<br />
+<span id="more-12138"></span><br />
+I busted the myth that &#8220;Linux is hard because you have to be a hacker, it&#8217;s terminal operated&#8221; I showed them how to install openSUSE Leap step by step (pictures) and also how to use GNOME (pictures). I mentioned our tools to make a very stable distro and finally I showed them that it&#8217;s not only a distro but there are people (the communtity) that take care of the software.</p>
+<p><a href="https://dl.dropboxusercontent.com/u/20413076/opensuse/epal_24_nov/presentation.jpg" target="1"><img src="https://dl.dropboxusercontent.com/u/20413076/opensuse/epal_24_nov/presentation.jpg" width="70%" height="70%"></a></p>
+<p>There were plenty of questions about linux software alternatives, how to install, if they can replace Ubuntu/Windows with openSUSE and what is perfect suit for specific systems. Each student took a DVD with stikers and a card with Greek community information. Professors will organize an install fest for their lab and/or laptops of their students.</p>
+<p>I would like to thank Douglas DeMaio for managing to send me DVDs and stickers and Alexandros Mouhtsis that managed with his professors to organize this presentation. Finally, I would like to thank <a href="https://www.flickr.com/photos/146573897@N06" target="1">Dimitrios Katsikas</a> for taking pictures.</p>
+<p><a href="https://dl.dropboxusercontent.com/u/20413076/opensuse/epal_24_nov/promo_material.jpg" target="1"><img src="https://dl.dropboxusercontent.com/u/20413076/opensuse/epal_24_nov/promo_material.jpg" width="70%" height="70%"></a></p>
+<p><a href="https://dl.dropboxusercontent.com/u/20413076/opensuse/epal_24_nov/promo_material_1.jpg" target="1"><img src="https://dl.dropboxusercontent.com/u/20413076/opensuse/epal_24_nov/promo_material_1.jpg" width="70%" height="70%"></a></p>
+<p>You can find the same <a href="http://eiosifidis.blogspot.gr/2016/11/opensuse-at-school.html" target="_blank">post at my blog</a>.</p>
+]]></content:encoded>
+			<wfw:commentRss>https://lizards.opensuse.org/2016/11/29/opensuse-project-presentation-at-school-nov-24th-2016/feed/</wfw:commentRss>
+		<slash:comments>0</slash:comments>
+		</item>
+		<item>
+		<title>YaST Team visits Euruko 2016</title>
+		<link>https://lizards.opensuse.org/2016/11/23/yast-team-visits-euruko-2016/</link>
+		<comments>https://lizards.opensuse.org/2016/11/23/yast-team-visits-euruko-2016/#respond</comments>
+		<pubDate>Wed, 23 Nov 2016 16:47:54 +0000</pubDate>
+		<dc:creator><![CDATA[Yast Team]]></dc:creator>
+				<category><![CDATA[Events]]></category>
+		<category><![CDATA[Programming]]></category>
+		<category><![CDATA[YaST]]></category>
+
+		<guid isPermaLink="false">http://lizards.opensuse.org/?p=12116</guid>
+		<description><![CDATA[As promised in previous posts, we want to share with you our experience and views from this year annual Ruby conference Euruko. Maybe &#8220;our&#8221; is too much to say, since we only sent one developer there. So to be precise, these are Josef Reidinger&#8217;s experience and views on the conference. This year Euruko took place [&#8230;]]]></description>
+				<content:encoded><![CDATA[<p>As promised in previous posts, we want to share with you our experience and views from this year annual Ruby conference <a href="http://euruko2016.org">Euruko</a>. Maybe &#8220;our&#8221; is too much to say, since we only sent one developer there. So to be precise, these are Josef Reidinger&#8217;s experience and views on the conference.</p>
+<p>This year Euruko took place in Sofia, capital of Bulgaria. It turned out to be a great conference place. Public transport works very well, everyone speak English and even when it uses Cyrilic alphabet, almost everything is written also in Latin one.</p>
+<p>That being said, let&#8217;s talk about the conference content. Fortunately all the presentations were recorded so you can <a href="https://www.youtube.com/channel/UChGs1td4ViQFqT0jlvkyUJg">watch them yourself</a>. But since it would be quite some hours of video to go through, we have reviewed some presentations for you including access to the corresponding videos.</p>
+<h3>Highlights</h3>
+<p>Let&#8217;s start with the three presentation Josef specially recommend to watch.</p>
+<p><b>Keynote by Matz</b></p>
+<p>He speaks about how Ruby 3 will probably look in distant future. With &#8220;distant future&#8221; meaning &#8220;for sure not in next two years&#8221;. If you cannot wait, it&#8217;s worth mentioning that Ruby 2.4 will be released on December.</p>
+<p>Ruby 3 will use guild membership concurrency model. The most interesting part of the talk is digging into rationale of typed versus non-typed languages and what can be the Ruby future in that regard.</p>
+<p><iframe width="500" height="281" src="https://www.youtube.com/embed/8aHmArEq4y0?feature=oembed" frameborder="0" allowfullscreen></iframe></p>
+<p><b>Rules, Laws and Gently Guidelines by Andrew Radev</b></p>
+<p>Interesting view about common design principles, common mistakes when applying them and looking to them from different angles. Also explaining how to handle situations in which several design principles seem to contradict each other.</p>
+<p><iframe width="500" height="281" src="https://www.youtube.com/embed/BDXQ4pcbEBA?feature=oembed" frameborder="0" allowfullscreen></iframe></p>
+<p><b>Elixir by Jose Valim</b></p>
+<p>Interesting intro to Elixir language. What it is, why it make sense to use it and what are its benefits. Josef&#8217;s impression was that Elixir&#8217;s idea is similar to isolated micro-services communicating via messages, with nice introspection and scalability.</p>
+<p>But we have more team members with something to say about Elixir. Like Imobach, who has been playing with Elixir (and <a href="http://www.phoenixframework.org/">Phoenix</a>) for some time now. And Imobach really likes Elixir, so he would like to add some more bits of information for those who are interested.</p>
+<p>For example, he would like to highlight that Elixir uses BEAM, the Erlang virtual machine, so great support for concurrency is backed in the platform. Concurrency sits on the concept of Erlang processes and it&#8217;s pretty common to use them for all kind of tasks (from computation to storing state, etc.). Imobach would like to encourage all developers out there to take a look to <a href="https://en.wikipedia.org/wiki/Open_Telecom_Platform">OTP (Open Telecom Platform)</a>. Who needs micro-services at all? </p>
+<p>Last but not least, take into account that Elixir is a functional language, so if you have an object-oriented mindset (like most Ruby developers) it will take some time to wrap your head around it.</p>
+<p><iframe width="500" height="281" src="https://www.youtube.com/embed/xhwnHovnq_0?feature=oembed" frameborder="0" allowfullscreen></iframe></p>
+<h3>Other presentations</h3>
+<p><b>Little Snippets by Xavier Noria</b></p>
+<p>Summary of common inefficiency in small snippets. Small things that matter, although most of them should be already known by the average Ruby developer. (<a href="https://www.youtube.com/watch?v=mC9TyVeER_8">Video</a>)</p>
+<p>Since we mention the topic, some YaST team members has found <a href="https://github.com/JuanitoFatas/fast-ruby">this cheat sheet</a> by Juanito Fatas about Ruby optimization to be quite useful.</p>
+<p><b>Rails + Kafka by Terence Lee</b></p>
+<p>Apache Kafka is yet another messaging system. This talk did not manage to convince Josef to use it, but maybe it makes sense in some scenarios like HPC or HA. (<a href="https://www.youtube.com/watch?v=yl3JmF3n2bQ">Video</a>)</p>
+<p><b>Graphql on Rails by Marc-Andre Giroux</b></p>
+<p>The typical REST setup is sometimes not scalable enough due to the excess of endpoints. The Graphql language is designed to specify what resources are needed from a server in a single query. The result is returned as JSON and the request specification looks also similar to JSON. Caching is done on client side. Interesting for web stuff and already used by Facebook, Shopify and others. (<a href="https://www.youtube.com/watch?v=_V96jduEvjY">Video</a>)</p>
+<p><b>Evolution of engineering on call team by Grace Chang</b></p>
+<p>How to maintain services, how to scale when the grow, preventing burnout and so on. Specially interesting for us since there are many similarities with YaST maintenance. Maybe the end of the talk is a bit theoretic and idealistic. (<a href="https://www.youtube.com/watch?v=u_7wrPXaSto">Video</a>)</p>
+<p><b>Sprockets by Rafael Franca</b></p>
+<p>Not specially interesting intro to assets generation used by Rails. People doing some assets generation with Rails would most likely already know all the content. (<a href="https://www.youtube.com/watch?v=rbM_1wRVfeI">Video</a>)</p>
+<p><b>Contribute to Ruby core by Hiroshi Shibata</b></p>
+<p>Presentation about Ruby core development infrastructure, rules, etc. Certainly not the best talk ever. (<a href="https://www.youtube.com/watch?v=IRfsakcZJKw">Video</a>)</p>
+<p><b>Consequences of insightful algorithms by Carina C. Zona</b></p>
+<p>Interesting presentation about conflicts between algorithms and real humans, especially with data-mining. Unfortunately, the second half turned to be too emotional and not technical enough for Josef&#8217;s taste :). (<a href="https://www.youtube.com/watch?v=bp4yFKw_1QM">Video</a>)</p>
+<p><b>Viewing Ruby Blossom &#8211; Hamani by Anton Davydov</b></p>
+<p>Introduction to yet another Ruby web framework. Not that interesting for us. (<a href="https://www.youtube.com/watch?v=3L6I4UoK8xM">Video</a>)</p>
+<p><b>A Year of Ruby, Together by Andre Arko</b></p>
+<p>Introduction on how the open source community infrastructure behind Rubygems and Bundler is ran. How they get money to improve stuff, how they maintain their servers&#8230; Good talk about hard times keeping open source infrastructure alive. Interesting talk for any open source project. (<a href="https://www.youtube.com/watch?v=SJddsEfvcW8">Video</a>)</p>
+<p><b>What I Have Learned from Organizing Remote Internship for Ruby Developers by Ivan Nemytchenko</b></p>
+<p>Talk describing an attempt to scale internship for a lot of students. Josef had a small chat with the author about Google Summer of Code after the presentation. He looked interested. (<a href="https://www.youtube.com/watch?v=H-K0ZKOclBU">Video</a>)</p>
+<p><b>The Illusion of Stable APIs by Nick Sutterer</b></p>
+<p>Not Josef&#8217;s cup of tea. The presenter probably went a little bit too far trying to be funny all the time. The core of the presentation was about three examples of API that needed to be changed &#8220;just&#8221; because the rest of the world changed. So the whole presentation can be shortened to one sentence &#8211; your API will only remain static if the world remains static. (<a href="https://www.youtube.com/watch?v=mvHwTtsIH8g">Video</a>)</p>
+<h3>Conclusion</h3>
+<p>That was all from Sofia. See you again in approximately one week, just in time for the report of our 28th Scrum sprint.</p>
+]]></content:encoded>
+			<wfw:commentRss>https://lizards.opensuse.org/2016/11/23/yast-team-visits-euruko-2016/feed/</wfw:commentRss>
+		<slash:comments>0</slash:comments>
+		</item>
+		<item>
+		<title>Highlights of YaST development sprint 27</title>
+		<link>https://lizards.opensuse.org/2016/11/10/highlights-of-yast-development-sprint-27/</link>
+		<comments>https://lizards.opensuse.org/2016/11/10/highlights-of-yast-development-sprint-27/#comments</comments>
+		<pubDate>Thu, 10 Nov 2016 11:17:57 +0000</pubDate>
+		<dc:creator><![CDATA[Yast Team]]></dc:creator>
+				<category><![CDATA[Base System]]></category>
+		<category><![CDATA[Distribution]]></category>
+		<category><![CDATA[Factory]]></category>
+		<category><![CDATA[Programming]]></category>
+		<category><![CDATA[Systems Management]]></category>
+		<category><![CDATA[YaST]]></category>
+
+		<guid isPermaLink="false">http://lizards.opensuse.org/?p=12095</guid>
+		<description><![CDATA[Another three weeks of development come to an end&#8230; and our usual report starts. Take a look to what we have been cooking. Read-only proposal modules This week, during SUSECon 2016, SUSE announced an exciting upcoming new product. SUSE CASP &#8211; a Kubernetes based Container As a Service Platform. That has, of course, some implications [&#8230;]]]></description>
+				<content:encoded><![CDATA[<p>Another three weeks of development come to an end&#8230; and our usual report starts. Take a look to what we have been cooking. </p>
+<h3>Read-only proposal modules</h3>
+<p>This week, during <a href="http://www.susecon.com/">SUSECon 2016</a>, SUSE announced an exciting upcoming new product. SUSE CASP &#8211; a <a href="http://kubernetes.io/">Kubernetes</a> based Container As a Service Platform.</p>
+<p>That has, of course, some implications for the installer, like the need of some products (like CASP) to specify a fixed configuration for some subsystems. For example, an established selection of packages. The user should not be allowed to change those fixed configurations during installation.</p>
+<p>We have implemented a possibility to mark some modules in the installation proposal as read-only. These read-only modules then cannot be started from the installer and therefore their configuration is kept at the default initial state.</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/11/readonly.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/11/readonly-300x225.png" alt="Software and firewall proposals as read-only" width="300" height="225" class="aligncenter size-medium wp-image-12099" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/11/readonly-300x225.png 300w, https://lizards.opensuse.org/wp-content/uploads/2016/11/readonly-768x576.png 768w, https://lizards.opensuse.org/wp-content/uploads/2016/11/readonly.png 1024w" sizes="(max-width: 300px) 100vw, 300px" /></a></p>
+<p>In this sprint we have implemented a basic support in the proposal framework, in the future we could improve the respective proposal modules to better handle the read-only mode.</p>
+<h3>Per product Btrfs subvolumes handling</h3>
+<p>The ability to have read-only proposals is not the only improvement we have introduced in YaST to make SUSE CASP possible.</p>
+<p>When Btrfs is used during the installation, YaST2 proposes a list of subvolumes to create. Unfortunatelly, that list is hard-coded and it&#8217;s the same for every (open)SUSE product&#8230; until now.</p>
+<p>Starting on yast2-storage 3.1.103.1, a list of subvolumes can be defined in the product&#8217;s control file along with additional options (check out <a href="https://github.com/yast/skelcd-control-SLES/blob/master/control/control.SLES.xml#L190">SLES</a> and <a href="https://github.com/yast/skelcd-control-openSUSE/blob/master/control/control.openSUSE.xml#L297">openSUSE</a> examples to learn more).</p>
+<pre>
+&lt;subvolumes config:type="list"&gt;
+  &lt;subvolume&gt;
+    &lt;path&gt;boot/grub2/i386-pc&lt;/path&gt;
+    &lt;archs&gt;i386,x86_64&lt;/archs&gt;
+  &lt;/subvolume&gt;
+  &lt;subvolume&gt;
+    &lt;path&gt;home&lt;/path&gt;
+  &lt;/subvolume&gt;
+  &lt;subvolume&gt;
+    &lt;path&gt;opt&lt;/path&gt;
+  &lt;/subvolume&gt;
+  &lt;subvolume&gt;
+    &lt;path&gt;var/lib/libvirt/images&lt;/path&gt;
+    &lt;copy_on_write config:type="boolean"&gt;false&lt;/copy_on_write&gt;
+  &lt;/subvolume&gt;
+&lt;/subvolumes&gt;
+</pre>
+<p>This specification supports:</p>
+<ul>
+<li>Disabling copy-on-write for a given subvolume (it&#8217;s enabled by default).</li>
+<li>Enabling the creation of a subvolume only for a set of architectures.</li>
+</ul>
+<h3>Improved AutoYaST Btrfs subvolumes handling</h3>
+<p>AutoYaST Btrfs subvolumes handling has been also improved. Using almost the same syntax as for product control files, you can disable the <code>CoW</code> behavior for a given subvolume.</p>
+<p>Of course, if you don&#8217;t need such a feature, you won&#8217;t need to adapt your profiles to the new syntax as it&#8217;s backward compatible. You can also mix both of them:</p>
+<pre>
+&lt;subvolumes config:type="list"&gt;
+  &lt;subvolume&gt;home&lt;/subvolume&gt;
+  &lt;subvolume&gt;
+    &lt;path&gt;var/lib/libvirt/images&lt;/path&gt;
+    &lt;copy_on_write config:type="boolean"&gt;false&lt;/copy_on_write&gt;
+  &lt;/subvolume&gt;
+&lt;/subvolumes&gt;
+</pre>
+<p>On the other hand, if you&#8217;re running SLES, you&#8217;ll know that a subvolume called <code>@</code> is used as the default Btrfs subvolume. Now is possible to turn-off such behavior in the profile&#8217;s general section.</p>
+<pre>
+&lt;general&gt;
+  &lt;btrfs_set_subvolume_default_name config:type="boolean"&gt;false&lt;/btrfs_set_subvolume_default_name&gt;
+&lt;/general&gt;
+</pre>
+<h3>Disable installer self-update by default</h3>
+<p>We have talked many times in this blog about the new self-update functionality for the installer. As expected, this functionality will debut in SLE-12-SP2 but with a small change in the original plan. In order to ensure maximum consistency in the behavior of SLE-12-SP1 and SP2 installers, the self-update functionality will be disabled by default. Not a big deal, since enabling it to get the latest fixes will be just a matter of adding a boot option in the initial installation screen.</p>
+<h3>Storage reimplementation: adapted EFI proposal in yast2-bootloader</h3>
+<p>The previous report about the status of the storage stack reimplementation finished with the following cliffhanger &#8220;<i>we have in place all the ingredients to cook an installable ISO</i>&#8220;. So, as expected, we worked during this sprint in adapting the bootloader proposal to the new storage layer. As you can see in the following screenshot, we succeeded and the installer can already propose a valid grub2 setup to boot an EFI system.</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/11/grub2efi.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/11/grub2efi-300x225.png" alt="EFI proposal with the storage-ng ISO" width="300" height="225" class="aligncenter size-medium wp-image-12100" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/11/grub2efi-300x225.png 300w, https://lizards.opensuse.org/wp-content/uploads/2016/11/grub2efi-768x576.png 768w, https://lizards.opensuse.org/wp-content/uploads/2016/11/grub2efi.png 1024w" sizes="(max-width: 300px) 100vw, 300px" /></a></p>
+<p>Does that mean that the testing ISO for the new storage stack is already fully installable? Unfortunately not. Why not, you ask? The reason is, in fact, kind of fun.</p>
+<p>The current partitioning proposal only works with MS-DOS style partition tables because we wanted to address the most complicated case first. On the other hand, we intentionally restricted the adaptation of the bootloader proposal to the EFI scenario. And you know what? We found out that combination (MS-DOS partition table + EFI) <a href="https://bugzilla.suse.com/show_bug.cgi?id=1008289">does not currently work</a> in Tumbleweed, so it neither does in our Tumbleweed-based testing ISO.</p>
+<p>We will work during the following sprint to support another scenario. And hopefully we will not choose again an unsupported or broken one. <img src="https://s.w.org/images/core/emoji/2/72x72/1f609.png" alt="&#x1f609;" class="wp-smiley" style="height: 1em; max-height: 1em;" /></p>
+<h3>Letting libYUI run free: first visible steps</h3>
+<p>As you know, YaST has both a graphical and a textual interface. They run on the same code thanks to an abstraction layer called LibYUI. Originally it served YaST only, but over time other projects started using it, notably the admin panel in Mageia. Moreover, the developers of those projects started to contribute fixes and improvements to LibYUI&#8230; faster than we can cope with.</p>
+<p>Recently we decided to give the people outside the YaST team more power in the LibYUI project. To make that possible ensuring it does not affect YaST stability, we have been enabling more continuous integration tests.</p>
+<p>As a first fruit of the revamped collaboration, we have merged a fix contributed by Angelo Naselli of Mageia regarding selection of tree items. As soon as we complete our continuous integration setup (of course we will keep you informed), more fixes and improvements will come for sure.</p>
+<h3>More bug squashing and bug paleontology</h3>
+<p>In the <a href="https://lizards.opensuse.org/2016/10/20/highlights-of-yast-development-sprint-26/">previous report</a> we presented our new effort to integrate the fix of low-priority bugs into the Scrum process. During this sprint we refined the idea a little bit more, distinguishing two separate concepts (each of them with its own <a href="https://www.scrumalliance.org/community/articles/2007/march/glossary-of-scrum-terms#1130">PBI</a>) &#8211; fixing of existing bugs and closing of too old ones.</p>
+<p>The first one doesn&#8217;t need much explanation. We managed to fix around 25 non-critical bugs in YaST and if you are using Tumbleweed you are probably already benefiting from the result.</p>
+<p>The second task was not exactly about fixing bugs present in the software, but about cleaning bugzilla from bug reports that were simply too old to be relevant any more. Like bugs affecting very old versions of openSUSE that cannot be reproduced in openSUSE 13.2 or Leap. We must be realistic about releases that are already out of support and the limited human resources we have. We closed around 80 of those ancient bugs.</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/11/no_country_for_old_bugs.jpg"><img src="//lizards.opensuse.org/wp-content/uploads/2016/11/no_country_for_old_bugs-300x169.jpg" alt="no_country_for_old_bugs" width="300" height="169" class="aligncenter size-medium wp-image-12105" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/11/no_country_for_old_bugs-300x169.jpg 300w, https://lizards.opensuse.org/wp-content/uploads/2016/11/no_country_for_old_bugs.jpg 569w" sizes="(max-width: 300px) 100vw, 300px" /></a></p>
+<p>So overall, we cleaned up around one hundred bugs from our queue. Still a long way to have a bug-free YaST, but undoubtedly a step in the right direction. </p>
+<h3>More coming</h3>
+<p>We are already working in the next sprint that will hopefully bring several new improvements for CASP, quite relevant progress in the storage reimplementation, several usability improvements, some bugfixes and even some news about this blog.</p>
+<p>To make sure you don&#8217;t get bored while waiting we are also planning to finally publish the report about our visit to <a href="http://euruko2016.org/">Euruko 2016</a>.</p>
+<p>Stay tuned!</p>
+]]></content:encoded>
+			<wfw:commentRss>https://lizards.opensuse.org/2016/11/10/highlights-of-yast-development-sprint-27/feed/</wfw:commentRss>
+		<slash:comments>4</slash:comments>
+		</item>
+		<item>
+		<title>Basic Nextcloud installation on openSUSE Leap</title>
+		<link>https://lizards.opensuse.org/2016/10/28/nextcloud-installation-on-opensuse-leap/</link>
+		<comments>https://lizards.opensuse.org/2016/10/28/nextcloud-installation-on-opensuse-leap/#respond</comments>
+		<pubDate>Fri, 28 Oct 2016 15:09:09 +0000</pubDate>
+		<dc:creator><![CDATA[Efstathios Iosifidis]]></dc:creator>
+				<category><![CDATA[Apache]]></category>
+		<category><![CDATA[Documentation]]></category>
+		<category><![CDATA[Server]]></category>
+		<category><![CDATA[42.1]]></category>
+		<category><![CDATA[cloud]]></category>
+		<category><![CDATA[Leap]]></category>
+		<category><![CDATA[nextcloud]]></category>
+		<category><![CDATA[openSUSE]]></category>
+
+		<guid isPermaLink="false">http://lizards.opensuse.org/?p=12089</guid>
+		<description><![CDATA[I see the official documentation has full tutorial for RHEL 6 or CentOS 6 and RHEL 7 or CentOS 7. The main documentation covers Ubuntu 14.04 LTS openSUSE already has the Nextcloud client packaged in Tumbelweed and the Server is in the PHP extra repo! Personally, I prefer to install eveything from official repository, so [&#8230;]]]></description>
+				<content:encoded><![CDATA[<p><img src="https://en.opensuse.org/images/0/0f/Nextcloud.png" alt="Nextcloud Logo" width="40%" height="40%" /></p>
+<p>I see the official documentation has full tutorial for <a href="https://docs.nextcloud.com/server/10/admin_manual/installation/php_54_installation.html" target="1">RHEL 6 or CentOS 6</a> and <a href="https://docs.nextcloud.com/server/10/admin_manual/installation/php_55_installation.html" target="1">RHEL 7 or CentOS 7</a>. The main documentation covers <a href="https://docs.nextcloud.com/server/10/admin_manual/installation/source_installation.html" target="1">Ubuntu 14.04 LTS</a></p>
+<p>openSUSE already has the <a href="https://software.opensuse.org/search?utf8=%E2%9C%93&amp;q=nextcloud&amp;search_devel=false&amp;search_unsupported=false&amp;baseproject=openSUSE%3AFactory" target="1">Nextcloud client packaged in Tumbelweed and the Server is in the PHP extra repo!</a> Personally, I prefer to install eveything from official repository, so when an update is available, I can have it without a glitch. This tutorial describes how to install Nextcloud using command line. I followed the official documentation of <a href="https://docs.nextcloud.com/server/10/admin_manual/installation/source_installation.html" target="1">Ubuntu 14.04 LTS installation</a>.</p>
+<p>Why choose <a href="https://en.opensuse.org/Portal:Leap" target="1">openSUSE Leap</a>? openSUSE Leap is a brand new way of building openSUSE and is new type of hybrid Linux distribution. Leap uses source from <a href="https://www.suse.com/promo/sle/" target="1">SUSE Linux Enterprise (SLE)</a>, which gives Leap a level of stability unmatched by other Linux distributions, and combines that with community developments to give users, developers and sysadmins the best stable Linux experience available. Contributor and enterprise efforts for Leap bridge a gap between matured packages and newer packages found in openSUSE’s other distribution Tumbleweed. You can download openSUSE Leap from the site <a href="https://software.opensuse.org/" target="1">https://software.opensuse.org/</a>.<br />
+<span id="more-12089"></span><br />
+Make sure that ssh (sshd) is enabled and also the firewall either is disabled or <a href="https://en.opensuse.org/SuSEfirewall2" target="1">make an exception to the apache and ssh services</a>. You can also set a static IP (<a href="http://eiosifidis.blogspot.gr/2015/05/set-static-ip-on-your-opensuse-raspberry-pi.html" target="1">check out how</a>).</p>
+<p>First of all, let&#8217;s install the required and recommended modules for a typical Nextcloud installation, using Apache and MariaDB, by issuing the following commands in a terminal:</p>
+<div class="code">zypper in apache2 mariadb apache2-mod_php5 php5-gd php5-json php5-fpm php5-mysql php5-curl php5-intl php5-mcrypt php5-zip php5-mbstring php5-zlib</div>
+<p><b>Create Database (optional since it&#8217;ll create eveything automatically)</b>Next step, create a database. First of all start the service.</p>
+<div class="code">systemctl start mysql.service<br />
+systemctl enable mysql.service</div>
+<p>The root password is empty by default. That means that you can press enter and you can use your root user. That&#8217;s not safe at all. So you can set a password using the command:</p>
+<div class="code">mysqladmin -u root password newpass</div>
+<p>Where newpass is the password you want.</p>
+<p>Now you set the root password, create the database.</p>
+<blockquote><p>mysql -u root -p<br />
+#you&#8217;ll be asked for your root passwordCREATE DATABASE nextcloudb;</p>
+<p>GRANT ALL ON nextcloudb.* TO ncuser@localhost IDENTIFIED BY &#8216;dbpass&#8217;;</p></blockquote>
+<p>Database user: <b>ncuser</b><br />
+Database name: <b>nextcloudb</b><br />
+Database user password: <b>dbpass</b></p>
+<p>You can change the above information accordingly.</p>
+<p><b>PHP changes</b><br />
+Now you should edit the php.ini file.</p>
+<blockquote><p>nano /etc/php5/apache2/php.ini</p></blockquote>
+<p>change the values</p>
+<blockquote><p>post_max_size = 50G<br />
+upload_max_filesize = 25G<br />
+max_file_uploads = 200<br />
+max_input_time = 3600<br />
+max_execution_time = 3600<br />
+session.gc_maxlifetime = 3600<br />
+memory_limit = 512M</p></blockquote>
+<p>and finally enable the extensions.</p>
+<blockquote><p>extension=php_gd2.dll<br />
+extension=php_mbstring.dll</p></blockquote>
+<p><b>Apache Configuration</b><br />
+You should enable some modules. Some might be already enabled.</p>
+<blockquote><p>a2enmod php5<br />
+a2enmod rewrite<br />
+a2enmod headers<br />
+a2enmod env<br />
+a2enmod dir<br />
+a2enmod mime</p></blockquote>
+<p>Now start the apache service.</p>
+<blockquote><p>systemctl start apache2.service<br />
+systemctl enable apache2.service</p></blockquote>
+<p><b>Install Nextcloud from source code (option 1, preferable)</b><br />
+Before the installation, create the data folder and give the right permissions (preferably outside the server directory for security reasons). I created a directory in the <i>/mnt</i> directory. You can mount a USB disk, add it to fstab and save your data there. The commands are:</p>
+<blockquote><p>mkdir /mnt/nextcloud_data<br />
+chmod -R 0770 /mnt/nextcloud_data<br />
+chown wwwrun /mnt/nextcloud_data</p></blockquote>
+<p>Now download Nextcloud (find the latest version at <a href="https://nextcloud.com/install/" target="1">https://nextcloud.com/install/</a>). Then unzip and move the folder to the server directory.</p>
+<blockquote><p>wget https://download.nextcloud.com/server/releases/nextcloud-10.0.0.zip<br />
+unzip nextcloud-10.0.0.zip<br />
+cp -r netcloud /srv/www/htdocs<br />
+chown -R wwwrun /srv/www/htdocs/nextcloud/</p></blockquote>
+<p>Make sure that everything is OK and then delete the folder nextcloud and nextcloud-10.0.0.zip from the root (user) directory.</p>
+<p>Now open your browser to the server IP/nextcloud</p>
+<p><a href="https://dl.dropboxusercontent.com/u/20413076/nextcloud/opensuse/nextcloud_install.png" target="1"><img src="https://dl.dropboxusercontent.com/u/20413076/nextcloud/opensuse/nextcloud_install.png" width="80%" height="80%" /></a>Set your administrator username and password.<br />
+Your data directory is: /mnt/nextcloud_data<br />
+Regarding database, use the following.<br />
+Database user: <b>ncuser</b><br />
+Database name: <b>nextcloudb</b><br />
+Database user password: <b>dbpass</b></p>
+<p>Wait until it ends the installation. The page you&#8217;ll see is the following.</p>
+<p><a href="https://dl.dropboxusercontent.com/u/20413076/nextcloud/opensuse/nextcloud_first_login.png" target="1"><img src="https://dl.dropboxusercontent.com/u/20413076/nextcloud/opensuse/nextcloud_first_login.png" width="80%" height="80%" /></a></p>
+<p><b>Install Nextcloud using the respository (option 2)</b></p>
+<p>If you want to have automatic updates of your Nextcloud instance when there&#8217;s a new version, you can add the repository. There are packages available for openSUSE Leap 42.1, 42.2 and Tumbleweed (we recommend openSUSE Leap 42.1). You should be an administrator, so you can install Nextloud on your server.</p>
+<p>1. Add the Nextcloud repository.<br />
+<strong>openSUSE_Leap_42.2</strong></p>
+<blockquote><p>zypper ar http://download.opensuse.org/repositories/server:/php:/applications/openSUSE_Leap_42.2/ Nextcloud</p></blockquote>
+<p><strong>openSUSE_Leap_42.1</strong></p>
+<blockquote><p>zypper ar http://download.opensuse.org/repositories/server:/php:/applications/openSUSE_Leap_42.1/ Nextcloud</p></blockquote>
+<p><strong>openSUSE_Leap_Tumbleweed</strong></p>
+<blockquote><p>zypper ar http://download.opensuse.org/repositories/server:/php:/applications/openSUSE_Tumbleweed/ Nextcloud</p></blockquote>
+<p>2. Refresh your repositories</p>
+<blockquote><p>zypper refresh</p></blockquote>
+<p>3. Install Nextcloud (be careful you have to install LAMP first and change permissions of the files).</p>
+<blockquote><p>zypper install nextcloud</p></blockquote>
+<p>4. Open http://serverIP/nextcloud to install your instance (admin user account). Be careful to create another folder with the proper permissions for your data (as described).</p>
+<p>5. Login and use Nextloud.</p>
+<p>For more information about Nextcloud on openSUSE, check <a href="https://en.opensuse.org/SDB:Nextcloud" target="_blank">openSUSE wiki</a>.</p>
+<p>For any changes, check the <a href="https://github.com/iosifidis/nextcloud-opensuse-leap" target="1">github page</a>.</p>
+<p>For more configuration, you can follow the <a href="https://docs.nextcloud.com/server/10/admin_manual/contents.html" target="1">official documentation</a>. That was the basic installation on openSUSE Leap.</p>
+]]></content:encoded>
+			<wfw:commentRss>https://lizards.opensuse.org/2016/10/28/nextcloud-installation-on-opensuse-leap/feed/</wfw:commentRss>
+		<slash:comments>0</slash:comments>
+		</item>
+		<item>
+		<title>Highlights of YaST development sprint 26</title>
+		<link>https://lizards.opensuse.org/2016/10/20/highlights-of-yast-development-sprint-26/</link>
+		<comments>https://lizards.opensuse.org/2016/10/20/highlights-of-yast-development-sprint-26/#comments</comments>
+		<pubDate>Thu, 20 Oct 2016 12:36:54 +0000</pubDate>
+		<dc:creator><![CDATA[Yast Team]]></dc:creator>
+				<category><![CDATA[Distribution]]></category>
+		<category><![CDATA[Factory]]></category>
+		<category><![CDATA[Localization]]></category>
+		<category><![CDATA[Programming]]></category>
+		<category><![CDATA[Systems Management]]></category>
+		<category><![CDATA[Usability]]></category>
+		<category><![CDATA[YaST]]></category>
+
+		<guid isPermaLink="false">http://lizards.opensuse.org/?p=12055</guid>
+		<description><![CDATA[We did our best to keep you entertained during this development sprint with a couple of blog posts ([1] and [2]). But now the sprint is over and it&#8217;s time for a new report. Squashing low priority bugs One of the main reasons to adopt Scrum was to ensure we make a good use of [&#8230;]]]></description>
+				<content:encoded><![CDATA[<p>We did our best to keep you entertained during this development sprint with a couple of blog posts (<a href="https://lizards.opensuse.org/?p=12019">[1]</a> and <a href="https://lizards.opensuse.org/?p=12030">[2]</a>). But now the sprint is over and it&#8217;s time for a new report.</p>
+<h3>Squashing low priority bugs</h3>
+<p>One of the main reasons to adopt Scrum was to ensure we make a good use of our development resources (i.e. developers&#8217; time and brains) focusing on things that bring more value to our users. In the past we had the feeling that many important things were always postponed because the developers were flooded by other not so important stuff. Now that feeling is gone (to a great extent) and we have a more clear and shared view of the direction of our development efforts.</p>
+<p>But there is always a drawback. We have accumulated quite some unsolved low-priority bugs. That was an expected consequence, but still it was starting to feel wrong. On one hand, it makes us feel uncomfortable &#8211; replying &#8220;this will have to wait&#8221; so often is not nice, even if it&#8217;s for the shake a bigger goal. On the other hand, the amount of low-priority stuff was affecting the signal/noise ratio on Bugzilla, making harder to distinguish the important stuff.</p>
+<p>So far, dealing with those low-priority bug was something that each developer did on his own, as permitted by the time dedicated to Scrum. In sprint 26 we decided to make that effort an explicit part of the process and to devote a significant portion of the sprint to it. As a result we closed or reassigned a total of 135 bugs that were just sitting in our list.</p>
+<p>Yes, you did read it right. One hundred and thirty five bugs.</p>
+<h3>Storage reimplementation: our testing ISO can already destroy your data</h3>
+<p>On the previous sprint we already showed a screenshot of the installer using the new storage stack to calculate a partitioning proposal. Now the installer can go one step further. As you can see on this animation, the changes are now committed to the disk, meaning the system is actually partitioned, formatted and installed.</p>
+<p><img src="//lizards.opensuse.org/wp-content/uploads/2016/10/demo_commit_to_disk.gif" alt="Installation with the new storage stack"></p>
+<p>The process is interrupted after installing the software, when trying to configure and install the bootloader. That was expected because yast2-bootloader has still not been adapted to use the new stack. First of all, because we wanted to leave some fun for sprint 27. But also because we used this sprint (26) to document <a href="https://github.com/yast/yast-bootloader/blob/master/doc/boot_storage_needed_info.md">all the requirements of yast2-bootloader</a> in relation to the new storage stack. Now we have in place all the ingredients to cook an installable ISO.</p>
+<h3>Automatic update of translation files</h3>
+<p>Recently openSUSE has adopted <a href="https://weblate.org">Weblate</a> to perform and coordinate the translation of the software and the project&#8217;s web pages. The <a href="https://l10n.opensuse.org/">openSUSE&#8217;s Weblate instance</a> enables everybody (from dedicated translators to casual contributors) to take part in the process and makes possible to coordinate the translations of openSUSE with the ones for SUSE Enterprise Linux, boosting collaboration between the translators of both projects.</p>
+<p>As YaST developers, is of course our responsibility to ensure that openSUSE&#8217;s Weblate contains always the latest English strings to be translated. Making our developer&#8217;s life easier sometimes not only brings advantages for us but also for our users. Until now, after each code change we had to keep in mind to trigger the translation process for every added or changed English text. Sometimes we were not quick enough so that some English leftovers remained in our awesome YaST when being used in one of the 20 languages where the translation is normally 100% complete.</p>
+<p>Now we finally set up a <a href="https://ci.opensuse.org/">Jenkins</a> job to automate the process of triggering the translation update after code changes. This saves the developers some work and makes the update of translations even faster.</p>
+<p>Looking at <a href="https://l10n.opensuse.org/languages/">Weblate numbers</a>, you can see we have 20 languages that are about 100% translated, another 20 that are translated more than 75% and 37 languages which are translated less than 75%. So we still need some help to bring all languages to 100% coverage. If you are willing to contribute, why not join our team of translators? Check out <a href="https://en.opensuse.org/openSUSE:Localization_guide">the localization guide</a> to get in contact with the coordinators of your preferred language to learn about how to contribute with translations, reviews or by any other mean.</p>
+<h3>Ensure installation of packages needed for booting</h3>
+<p>We got some reports of systems not being able to work after the installation in scenarios in which the user had customized the list of packages to install. That happened because, although the bootloader component of YaST pre-selects for installation all the needed packages, the user can override that selection and manually disable the installation of those packages.</p>
+<p>To prevent this situation, or at least to increase awareness of it, the installer now alerts in the summary screen (the last step before proceeding to installation) if some of the required packages is missing, as you can see in the screenshot below. We still allow the users to shoot their own feet if they insist, but now we warn them very clearly.</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/10/softw.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/10/softw-300x226.png" alt="Warning about de-selected Grub2 package" width="300" height="226" class="aligncenter size-medium wp-image-12057" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/10/softw-300x226.png 300w, https://lizards.opensuse.org/wp-content/uploads/2016/10/softw-768x578.png 768w, https://lizards.opensuse.org/wp-content/uploads/2016/10/softw-1024x770.png 1024w, https://lizards.opensuse.org/wp-content/uploads/2016/10/softw.png 1025w" sizes="(max-width: 300px) 100vw, 300px" /></a></p>
+<h3>Progress in the low-vision accessibility of the installer</h3>
+<p>During this sprint, we have been working to make the (open)SUSE installer accessible to people with low-vision impairment. We already <a href="https://lizards.opensuse.org/?p=12019">blogged about it</a> looking for feedback.</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/10/highc.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/10/highc-300x225.png" alt="One of the new color modes available in the installer" width="300" height="225" class="aligncenter size-medium wp-image-12065" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/10/highc-300x225.png 300w, https://lizards.opensuse.org/wp-content/uploads/2016/10/highc-768x576.png 768w, https://lizards.opensuse.org/wp-content/uploads/2016/10/highc.png 1024w" sizes="(max-width: 300px) 100vw, 300px" /></a></p>
+<p>In a few days, some changes will land in Tumbleweed:</p>
+<ul>
+<li>Alternative style selection (color and font-sizes). Currently, we offer four options: default (no changes), high contrast (cyan/green/white/black), white on black and cyan on black. Those styles are just a proof of concept in order to test the code changes and, most important, to get feedback from you.</li>
+<li>A <a href="https://bugzilla.suse.com/show_bug.cgi?id=768112">long-standing issue</a>, which prevented to switch to high-contrast mode during installation (shift+F4), has been fixed.</li>
+</ul>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/10/linuxrc.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/10/linuxrc-300x225.png" alt="Style selection at the beginning of installation" width="300" height="225" class="aligncenter size-medium wp-image-12066" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/10/linuxrc-300x225.png 300w, https://lizards.opensuse.org/wp-content/uploads/2016/10/linuxrc-768x576.png 768w, https://lizards.opensuse.org/wp-content/uploads/2016/10/linuxrc.png 800w" sizes="(max-width: 300px) 100vw, 300px" /></a><br />
+Although we have made some progress, it is still an ongoing effort and we hope to release more improvements during the upcoming weeks.</p>
+<h3>Recover from broken bootloader configuration</h3>
+<p>There are situations in which YaST Bootloader is not able to read the system configuration. For example, when the udev device originally used by Grub2 is no longer available. In the past that leaded to YaST crashes, requiring a manual fix of the bootloader configuration files. Now YaST correctly detects the situation and offers the option to propose a new configuration with correct devices.</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/10/bootl.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/10/bootl-300x170.png" alt="YaST bootloader fixing a broken configuration" width="300" height="170" class="aligncenter size-medium wp-image-12058" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/10/bootl-300x170.png 300w, https://lizards.opensuse.org/wp-content/uploads/2016/10/bootl-768x435.png 768w, https://lizards.opensuse.org/wp-content/uploads/2016/10/bootl-1024x580.png 1024w, https://lizards.opensuse.org/wp-content/uploads/2016/10/bootl.png 1346w" sizes="(max-width: 300px) 100vw, 300px" /></a></p>
+<h3>Disable autorefresh by default in local media</h3>
+<p>We have changed the default autorefresh flag for the new repositories added by YaST. In the past the autorefresh was enabled for all repositories except CD/DVD media and ISO files.</p>
+<p>With the new defaults the autorefresh is enabled only for remote repositories (like http, ftp, nfs,&#8230;). The reason is that some local repositories might not be always available (e.g. external hard disk, USB flash drive,&#8230;) and the automatic refresh might cause ugly errors when starting the package manager.</p>
+<p>Of course, you can still manually change the autorefresh flag after adding a repository if you need a different value.</p>
+<p><i>Note: The default has been changed in Tumbleweed distribution only, Leap 42.2 or SLE-12-SP2 keep the old defaults. The zypper behavior is unchanged as well, it by default disables autorefresh for all repositories. Only repositories imported from a .repo file have autorefresh enabled. See <code>man zypper</code> for more details.</i></p>
+<h3>Tons of improvements in network bridge handling</h3>
+<p>YaST Network is Swiss Army knife for network configuration which comprehends the management of routing, bonding, bridging and many other things. But, to be honest, the management of bridges was not in the best possible shape. It had quite some usability problems and it was not 100% consistent with the way in which bridges are managed nowadays by <a href="https://en.opensuse.org/Portal:Wicked">Wicked</a> in (open)SUSE. Until now!</p>
+<p>This <a href="https://github.com/yast/yast-network/pull/448">pull request</a> with several screenshots and animations tries to summarize all the changes that have been done during this sprint. Like adapting old configuration files to the new conventions or unifying the UI to make it consistent with the one for managing bonding.</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/10/bridge.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/10/bridge-300x225.png" alt="Revamped YaST interface for handling bridges" width="300" height="225" class="aligncenter size-medium wp-image-12077" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/10/bridge-300x225.png 300w, https://lizards.opensuse.org/wp-content/uploads/2016/10/bridge-768x576.png 768w, https://lizards.opensuse.org/wp-content/uploads/2016/10/bridge.png 1024w" sizes="(max-width: 300px) 100vw, 300px" /></a></p>
+<p>This revamp includes also quite some usability improvements:</p>
+<ul>
+<li>&#8220;NONE&#8221; is shown instead of 0.0.0.0 for old bridge configuration.</li>
+<li>The bridge master is shown in the enslaved interface.</li>
+<li>The interfaces overview is updated after a bridge is modified.</li>
+</ul>
+<h3>Optimizing read of hosts file</h3>
+<p>It was reported that yast2-network was slow in system with a lot of entries in the <code>/etc/hosts</code> file. We took that as an opportunity to test the new profiler support in YaST. The profiler revealed the problem was in some slow calls to <a href="http://yastgithubio.readthedocs.io/en/latest/architecture/#system-configuration-repository-scr">SCR</a>, the layer traditionally used by YaST to interact with the underlying system&#8230; which sounded like another opportunity. This time an opportunity to expand the use of <a href="https://github.com/config-files-api/config_files_api">CFA</a> (the component we are developing to steady replace SCR) and its <a href="http://augeas.net/">Augeas</a> parser. Since Augeas already supports parsing of <code>/etc/hosts</code> files, it was quite straightforward to implement that into YaST&#8230; and the result is quite impressive.</p>
+<p>The time needed to execute the next command in a system containing a huge <code>/etc/hosts</code> with around 10,000 entries (quite an extreme case, we know) was reduced from 75 seconds to just 20.</p>
+<pre>
+yast2 lan list
+</pre>
+<p>As you can see in <a href="https://github.com/config-files-api/config_files_api/pull/10">this pull request</a>, we also improved CFA itself, greatly reducing the time needed for reading configuration files with Augeas.</p>
+<h3>That&#8217;s all&#8230; until next report</h3>
+<p>Once again, we must conclude the report telling that this was just a small summary of all the work done during the sprint and that we will be back in three weeks with the next report. Or maybe before, now that we are starting to get used to blog more often.</p>
+<p>In any case, see you soon and don&#8217;t forget to have a lot of fun!</p>
+]]></content:encoded>
+			<wfw:commentRss>https://lizards.opensuse.org/2016/10/20/highlights-of-yast-development-sprint-26/feed/</wfw:commentRss>
+		<slash:comments>1</slash:comments>
+		</item>
+		<item>
+		<title>Proprietary AMD/ATI Catalyst fglrx 15.12 rpms released for LEAP 42.2</title>
+		<link>https://lizards.opensuse.org/2016/10/15/proprietary-amdati-catalyst-fglrx-15-12-rpms-released-for-leap-42-2/</link>
+		<comments>https://lizards.opensuse.org/2016/10/15/proprietary-amdati-catalyst-fglrx-15-12-rpms-released-for-leap-42-2/#comments</comments>
+		<pubDate>Sat, 15 Oct 2016 16:16:18 +0000</pubDate>
+		<dc:creator><![CDATA[Bruno Friedmann]]></dc:creator>
+				<category><![CDATA[GNOME]]></category>
+		<category><![CDATA[KDE]]></category>
+		<category><![CDATA[Kernel]]></category>
+		<category><![CDATA[42.2]]></category>
+		<category><![CDATA[amd]]></category>
+		<category><![CDATA[fglrx]]></category>
+		<category><![CDATA[xorg]]></category>
+
+		<guid isPermaLink="false">http://lizards.opensuse.org/?p=12052</guid>
+		<description><![CDATA[Warnings There’s no warranties the drivers will work, for you! If you are satisfied with the open-source radeon drivers, don’t risk to break your computer ! Still there will NEVER be a fglrx driver for recent kernel and xorg. So if one of those component change in Leap fglrx will be broken. Actual situation Since [&#8230;]]]></description>
+				<content:encoded><![CDATA[<h3>Warnings</h3>
+<p>There’s no warranties the drivers will work, for you!</p>
+<p>If you are satisfied with the open-source radeon drivers,<span style="color: #ff0000"> <b>don’t risk to break your computer !<br />
+</b></span></p>
+<p>Still there will NEVER be a fglrx driver for recent kernel and xorg. So if one of those component change in Leap fglrx will be broken.</p>
+<h3>Actual situation</h3>
+<p>Since last december, AMD doesn&#8217;t published any update about fglrx so the version is still the 15.12.302 published. A few days ago our beloved Leap release manager Ludwig ask me by email, if there will be an available drivers for Leap 42.2.</p>
+<p>Today, after hacking a bit the last Sebastian Siebert&#8217;s script I&#8217;ve been able to build the drivers for Leap 42.2 RC1, and the driver install fine, and xorg start on my HD5750 (but that&#8217;s all what I can tell).</p>
+<p>I will rebuild the driver once Leap 42.2 will hit its final stage.</p>
+<h3>Repository</h3>
+<pre>zypper ar -cfg -n FGLRX http://geeko.ioda.net/mirror/amd-fglrx/openSUSE_Leap_42.2/ FLGRX
+
+zypper -v refresh -f FGLRX
+
+zypper -v install fglrx64_amdcccle_SUSE422 fglrx64_core_SUSE422 fglrx64_graphics_SUSE422  fglrx64_opencl_SUSE422 fglrx64_xpic_SUSE422</pre>
+<h3>Future</h3>
+<p>AMD has stopped any development for FGLRX, so it is already considered obsolete. But on the other side they make a lot of effort to bring radeon and amdgpu (the free and open source driver) to a decent performance level.</p>
+<p>I don&#8217;t have that much usage anymore of my AMD gpu powered computer, and my HD5750 is now 8 years old already, so I can&#8217;t promise to be able to follow up with changes.</p>
+<h3>Cleanup</h3>
+<p>I removed all the obsoletes packages letting only the last one for each openSUSE version still available. Also the server has no more copy of openSUSE github artwork. If this missing to someone, don&#8217;t hesitate to ask.</p>
+<p>Have fun</p>
+]]></content:encoded>
+			<wfw:commentRss>https://lizards.opensuse.org/2016/10/15/proprietary-amdati-catalyst-fglrx-15-12-rpms-released-for-leap-42-2/feed/</wfw:commentRss>
+		<slash:comments>5</slash:comments>
+		</item>
+		<item>
+		<title>Reducing YaST rebuild time by 30%</title>
+		<link>https://lizards.opensuse.org/2016/10/11/reducing-yast-rebuild-time-by-30/</link>
+		<comments>https://lizards.opensuse.org/2016/10/11/reducing-yast-rebuild-time-by-30/#comments</comments>
+		<pubDate>Tue, 11 Oct 2016 13:51:10 +0000</pubDate>
+		<dc:creator><![CDATA[Yast Team]]></dc:creator>
+				<category><![CDATA[Build Service]]></category>
+		<category><![CDATA[Distribution]]></category>
+		<category><![CDATA[Factory]]></category>
+		<category><![CDATA[Programming]]></category>
+		<category><![CDATA[Systems Management]]></category>
+		<category><![CDATA[YaST]]></category>
+
+		<guid isPermaLink="false">http://lizards.opensuse.org/?p=12030</guid>
+		<description><![CDATA[Here comes the YaST team again trying to flood your aggregator with blog post! Now it&#8217;s time for the story of how we reduced the critical path of the rebuild time of YaST RPM packages from 42min 2s to 29min 40s. Chapter 1: where to optimize Of course, the first step to start fixing something [&#8230;]]]></description>
+				<content:encoded><![CDATA[<p>Here comes the YaST team again trying to flood your aggregator with blog post! Now it&#8217;s time for the story of how we reduced the critical path of the rebuild time of YaST RPM packages from 42min 2s to 29min 40s.</p>
+<h2>Chapter 1: where to optimize</h2>
+<p>Of course, the first step to start fixing something is finding out what exactly needs to be fixed. In our case, this breaks down into</p>
+<ol>
+<li>knowing the dependencies, and</li>
+<li>knowing the individual build times.</li>
+</ol>
+<h3>Dependencies</h3>
+<p>It is tempting to figure out the dependencies by yourself, by parsing the spec files. But it is hard to do right, and, more importantly, a reinvention of the wheel. The Build Service must know all this to be able to schedule the builds, and provides a convenient way to access it, with <code>osc dependson</code>:</p>
+<pre>
+$ osc dependson YaST:Head openSUSE_Factory x86_64
+[...]
+yast2-x11 :
+   yast2-devtools
+yast2-xml :
+   yast2-core
+   yast2-devtools
+yast2-ycp-ui-bindings :
+   libyui
+   yast2-core
+   yast2-devtools
+</pre>
+<h3>Individual build times</h3>
+<p>For each source package, the Build Service produces not only binary RPMs but also a <code>_statistics</code> file, available in the <a href="https://build.opensuse.org/package/statistics/YaST:Head/yast2-core?arch=x86_64&amp;repository=openSUSE_Factory">web UI</a> or via <code>osc getbinaries</code>. We were interested in the total build time, although the data was of limited use because packages can be built on machines with vastly different power and this information is not included.</p>
+<h2>Chapter 2: how to optimize</h2>
+<p>Once we knew which screws needed to be tightened, it was time to do it. Fortunately we had more than one tool for the job.</p>
+<h3>Stop using Autotools</h3>
+<p>Autotools (automake, autoconf and configure) took up a majority of the time needed for building YaST packages. Now that most of those packages are written in pure Ruby, we don&#8217;t need autotools there checking for portability problems that we don&#8217;t have. Autotools are a leftover from the times 15 years back when they were the only sensible option. We <a href="https://twitter.com/timmartin2/status/23365017839599616">have wiped them out</a> where possible and have been <a href="https://github.com/yast/yast-bootloader/commit/5fb46ea8046ea9863e5411ffe1394797e71dde1e">switching</a> to our own <a href="https://github.com/openSUSE/packaging_rake_tasks">set of Rake tasks</a>.</p>
+<h3>Stub the APIs used in tests</h3>
+<p>We run a mixture of unit and integration tests at RPM build time. The downside of this is that we pull in many of the run time dependencies. Fortunately Ruby is a dynamic language and makes it easy to replace interfaces by stubs. That enables us to cut those dependencies.</p>
+<p>
+In fact, we also have some Perl code, notably in yast2-users. Although the stubbing techniques across languages are messier than with pure ruby, they are still effective for our purposes.</p>
+<h3>Do not build specialized documentation</h3>
+<p>This one is simple: if the development documentation is only useful for people that will check out the git repo anyway, then leave it out from the RPM.</p>
+<h2>Appendix: the details</h2>
+<p>
+Enough of high-level explanations, we we promised you graphs, code and all kind of gory details, and a promise made is a debt unpaid. So there we go.</p>
+<h3>Dependency graphs</h3>
+<p>A picture is worth a thousand words. That&#8217;s why we came up with <a href="https://github.com/mvidner/rpm-build-dependencies">this small tool</a> to generate a graphical representation of the dependencies of the YaST packages. In the resulting graphs displayed below, a node is a source package in the build service, and an arrow means &#8220;needs for its build&#8221;. Redundant arrows are omitted (that is, we&#8217;ve erased an A→C if both A→B and B→C existed).</p>
+<p>
+We can see that the most prominent conclusion is that there is a large number of packages that depend on yast2, a collection of basic libraries.</p>
+<p>
+But on top of that, in the original graph there are 6 more layers, and the graph is not very dense there. After our fixes, there are only 4 layers that are more dense.</p>
+<p>Is worth mentioning that the &#8220;layer&#8221; concept only works if the packages take roughly the same time to build; it would not be helpful if there were huge variations. To get a more accurate picture, we should have generated a histogram of build times. But the graph was good enough in our scenario&#8230; and we had to stop the analysis at some point. <img src="https://s.w.org/images/core/emoji/2/72x72/1f642.png" alt="&#x1f642;" class="wp-smiley" style="height: 1em; max-height: 1em;" /></p>
+<p>
+The build dependency graph before our fixes:</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/10/yast_deps_before.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/10/yast_deps_before-248x300.png" alt="YaST dependencies graph (before)" width="248" height="300" class="aligncenter size-medium wp-image-12033" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/10/yast_deps_before-248x300.png 248w, https://lizards.opensuse.org/wp-content/uploads/2016/10/yast_deps_before-768x928.png 768w, https://lizards.opensuse.org/wp-content/uploads/2016/10/yast_deps_before-848x1024.png 848w, https://lizards.opensuse.org/wp-content/uploads/2016/10/yast_deps_before.png 1600w" sizes="(max-width: 248px) 100vw, 248px" /></a></p>
+<p>The build dependency graph after our fixes:</p>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/09/yast_deps_after.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/09/yast_deps_after-184x300.png" alt="YaST dependencies graph (after)" width="184" height="300" class="aligncenter size-medium wp-image-11989" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/09/yast_deps_after-184x300.png 184w, https://lizards.opensuse.org/wp-content/uploads/2016/09/yast_deps_after-768x1255.png 768w, https://lizards.opensuse.org/wp-content/uploads/2016/09/yast_deps_after-627x1024.png 627w, https://lizards.opensuse.org/wp-content/uploads/2016/09/yast_deps_after.png 1600w" sizes="(max-width: 184px) 100vw, 184px" /></a></p>
+<h3>Build statistics</h3>
+<p>If those graph are not geeky enough for you, here you are the detailed build statistics from the build service</p>
+<pre>
+&lt;buildstatistics&gt;
+  &lt;disk&gt;
+    &lt;usage&gt;
+      &lt;size unit="M"&gt;1118&lt;/size&gt;
+      &lt;io_requests&gt;15578&lt;/io_requests&gt;
+      &lt;io_sectors&gt;2156642&lt;/io_sectors&gt;
+    &lt;/usage&gt;
+  &lt;/disk&gt;
+  &lt;memory&gt;
+    &lt;usage&gt;      &lt;size unit="M"&gt;580&lt;/size&gt; &lt;/usage&gt;
+  &lt;/memory&gt;
+  &lt;times&gt;
+    &lt;total&gt;      &lt;time unit="s"&gt;756&lt;/time&gt; &lt;/total&gt;         &lt;!-- THIS --&gt;
+    &lt;preinstall&gt; &lt;time unit="s"&gt;8&lt;/time&gt;   &lt;/preinstall&gt;
+    &lt;install&gt;    &lt;time unit="s"&gt;72&lt;/time&gt;  &lt;/install&gt;
+    &lt;main&gt;       &lt;time unit="s"&gt;555&lt;/time&gt; &lt;/main&gt;
+    &lt;download&gt;   &lt;time unit="s"&gt;4&lt;/time&gt;   &lt;/download&gt;
+  &lt;/times&gt;
+  &lt;download&gt;
+    &lt;size unit="k"&gt;33564&lt;/size&gt;
+    &lt;binaries&gt;53&lt;/binaries&gt;
+    &lt;cachehits&gt;24&lt;/cachehits&gt;
+    &lt;preinstallimage&gt;preinstallimage.preinstallimage.tar.gz&lt;/preinstallimage&gt;
+  &lt;/download&gt;
+&lt;/buildstatistics&gt;
+</pre>
+<h2>Epilogue</h2>
+<p>This was definitely an interesting journey. We learned quite some  things. Specially we learned that there is still room for improvement, but most likely the time reduction will not pay off for the time invested implementing those improvements.</p>
+<p>We have to be realistic and keep working in other interesting stuff to fuel the next sprint report, coming next week!</p>
+]]></content:encoded>
+			<wfw:commentRss>https://lizards.opensuse.org/2016/10/11/reducing-yast-rebuild-time-by-30/feed/</wfw:commentRss>
+		<slash:comments>3</slash:comments>
+		</item>
+		<item>
+		<title>Improving low-vision accessibility of the installer</title>
+		<link>https://lizards.opensuse.org/2016/10/07/improving-low-vision-accessibility-of-the-installer/</link>
+		<comments>https://lizards.opensuse.org/2016/10/07/improving-low-vision-accessibility-of-the-installer/#comments</comments>
+		<pubDate>Fri, 07 Oct 2016 08:25:36 +0000</pubDate>
+		<dc:creator><![CDATA[Yast Team]]></dc:creator>
+				<category><![CDATA[Accessibility]]></category>
+		<category><![CDATA[Distribution]]></category>
+		<category><![CDATA[Systems Management]]></category>
+		<category><![CDATA[Usability]]></category>
+		<category><![CDATA[YaST]]></category>
+
+		<guid isPermaLink="false">http://lizards.opensuse.org/?p=12019</guid>
+		<description><![CDATA[In our latest report, we promised you would not have to wait another three weeks to hear (or read) from us. And here we are again, but not with any of the anticipated topics (build time reduction and Euruko 2016), but with a call for help in a topic that could really make a difference [&#8230;]]]></description>
+				<content:encoded><![CDATA[<p>In our <a href="https://lizards.opensuse.org/?p=11983">latest report</a>, we promised you would not have to wait another three weeks to hear (or read) from us. And here we are again, but not with any of the anticipated topics (build time reduction and Euruko 2016), but with a call for help in a topic that could really make a difference for (open)SUSE.
+</p>
+<p>
+Nowadays, YaST team is trying to fix a long-standing issue in the installer: <a href="https://bugzilla.suse.com/show_bug.cgi?id=780621">low-vision accessibility</a>. In the past, a user could get a high-contrast mode just pressing shift+F4 during installation. Unfortunately, that feature does not work anymore and, to be honest, changing to a high-contrast palette is not enough. Other adjustments, like setting better font sizes, should be taken into account.
+</p>
+<p>
+Another option is to use the textmode installation and set some obscure variable (<code>Y2NCURSES_COLOR_THEME</code>) to get the high-contrast mode. But it sounds like the opposite to <em>user friendly</em>.
+</p>
+<p>
+  Some days ago, the team fired up the <a href="https://lists.opensuse.org/opensuse-factory/2016-09/msg00593.html">discussion</a> in the opensuse-factory mailing list but we would like to reach as many people as we can to gather information and feedback about this topic. Getting some affected people involved in the process would be really awesome!
+</p>
+<p>For the time being we’re already working on some improvements:</p>
+<ul>
+<li>
+    Adding a Linuxrc option so the user can set the high-contrast mode from the very beginning.
+  </li>
+<li>
+    Fixing <a href="http://bugzilla.novell.com/show_bug.cgi?id=768112">shift+F4 support</a>.
+  </li>
+<li>
+    Improving the high-contrast mode appearance. Below you can see a screenshot of the work in progress.
+  </li>
+</ul>
+<p><a href="//lizards.opensuse.org/wp-content/uploads/2016/10/lowvision.png"><img src="//lizards.opensuse.org/wp-content/uploads/2016/10/lowvision-300x225.png" alt="First prototype of the new high contrast mode" width="300" height="225" class="aligncenter size-medium wp-image-12025" srcset="https://lizards.opensuse.org/wp-content/uploads/2016/10/lowvision-300x225.png 300w, https://lizards.opensuse.org/wp-content/uploads/2016/10/lowvision-768x576.png 768w, https://lizards.opensuse.org/wp-content/uploads/2016/10/lowvision.png 1024w" sizes="(max-width: 300px) 100vw, 300px" /></a></p>
+<p>
+  But we would like to hear from you. You can raise your voice in the already mentioned <a href="https://lists.opensuse.org/opensuse-factory/2016-09/msg00593.html">thread at the opensuse-factory mailing list</a> or leave a comment in the related <a href="https://github.com/libyui/libyui-qt/pull/60">pull request</a> at Github. If you prefer to have a chat, we&#8217;re also available on <a href="irc://irc.opensuse.org/yast">the #yast IRC channel</a> at Freenode&#8230; and we love to see people there. <img src="https://s.w.org/images/core/emoji/2/72x72/1f609.png" alt="&#x1f609;" class="wp-smiley" style="height: 1em; max-height: 1em;" />
+</p>
+<p>
+Please, join us to make YaST even better!</p>
+]]></content:encoded>
+			<wfw:commentRss>https://lizards.opensuse.org/2016/10/07/improving-low-vision-accessibility-of-the-installer/feed/</wfw:commentRss>
+		<slash:comments>2</slash:comments>
+		</item>
+		<item>
+		<title>Atualizando o Edison Intel no openSUSE</title>
+		<link>https://lizards.opensuse.org/2016/10/03/atualizando-o-edison-intel-no-opensuse/</link>
+		<comments>https://lizards.opensuse.org/2016/10/03/atualizando-o-edison-intel-no-opensuse/#respond</comments>
+		<pubDate>Mon, 03 Oct 2016 22:50:06 +0000</pubDate>
+		<dc:creator><![CDATA[Alessandro de Oliveira Faria]]></dc:creator>
+				<category><![CDATA[Programming]]></category>
+
+		<guid isPermaLink="false">http://lizards.opensuse.org/?p=12014</guid>
+		<description><![CDATA[Neste post, disponibilizo os passos efetuados para atualizar o firmware do meu Intel Edison na plataforma openSUSE. ATENÇÃO: Antes de iniciar deixo claro , que o leitor deste post é responsável por qualquer problema que venha a acontecer com o seu aparelho, logo: sendo de sua inteira responsabilidade e risco a utilização das instruções a [&#8230;]]]></description>
+				<content:encoded><![CDATA[<p style="text-align: justify">Neste post, disponibilizo os passos efetuados para atualizar o firmware do meu Intel Edison na plataforma openSUSE.</p>
+<p><span style="color: #ff0000"><strong>ATENÇÃO: Antes de iniciar deixo claro , que o leitor deste post é responsável por qualquer problema que venha a acontecer com o seu aparelho, logo: sendo de sua inteira responsabilidade e risco a utilização das instruções a seguir.</strong></span></p>
+<p>Primeiramente instale o pacote</p>
+<pre>
+# zypper addrepo http://download.opensuse.org/repositories/home:cabelo:desktop/openSUSE_Leap_42.1/home:cabelo:desktop.repo
+# zypper refresh</strong>
+# zypper install dfu-util
+</pre>
+<p>Faça o Download da ultima versão do firmware em https://software.intel.com/pt-br/iot/hardware/edison/downloads</p>
+<p>Posicione a chave <strong>SW1</strong> próxima ao conector micro USB de acordo com a figura abaixo e plugue os 2 cabos USB:</p>
+<p><img class="alignnone size-full wp-image-4211" src="https://cabelovivaolinux.files.wordpress.com/2016/03/intel-edison-setup-1.png" alt="intel-edison-setup-1" width="1027" height="367" /></p>
+<p>E logo a seguir descompacte o arquivo recém baixado e execute o comando ./flashall.sh</p>
+<p><img class="alignnone size-full wp-image-4204" src="https://cabelovivaolinux.files.wordpress.com/2016/03/yocto02.png" alt="yocto02" width="1030" height="460" /></p>
+<p>Se executar o comando sudo screen /dev/ttyUSB0 115200, teremos a seguinte saida no console:</p>
+<p><strong>Starting Reboot&#8230;</strong></p>
+<p><strong>******************************</strong><br />
+<strong> PSH KERNEL VERSION: b0182727</strong><br />
+<strong> WR: 20104000</strong><br />
+<strong> ******************************</strong></p>
+<p><strong>SCU IPC: 0x800000d0 0xfffce92c</strong></p>
+<p><strong>PSH miaHOB version: TNG.B0.VVBD.0000000c</strong></p>
+<p><strong>microkernel built 23:15:13 Apr 24 2014</strong></p>
+<p><strong>******* PSH loader *******</strong><br />
+<strong> PCM page cache size = 192 KB</strong><br />
+<strong> Cache Constraint = 0 Pages</strong><br />
+<strong> Arming IPC driver ..</strong><br />
+<strong> Adding page store pool ..</strong><br />
+<strong> PagestoreAddr(IMR Start Address) = 0x04899000</strong><br />
+<strong> pageStoreSize(IMR Size) = 0x00080000</strong></p>
+<p><strong>*** Ready to receive application ***</strong></p>
+<p><strong>U-Boot 2014.04 (Aug 20 2014 &#8211; 16:08:32)</strong></p>
+<p><strong>Watchdog enabled</strong><br />
+<strong> DRAM: 980.6 MiB</strong><br />
+<strong> MMC: tangier_sdhci: 0</strong><br />
+<strong> In: serial</strong><br />
+<strong> Out: serial</strong><br />
+<strong> Err: serial</strong><br />
+<strong> Hit any key to stop autoboot: 0</strong><br />
+<strong> Target:blank</strong><br />
+<strong> Partitioning already done&#8230;</strong><br />
+<strong> Flashing already done&#8230;</strong><br />
+<strong> GADGET DRIVER: usb_dnl_dfu</strong><br />
+<strong> #</strong><br />
+<strong> DFU complete CRC32: 0x3756edb6</strong><br />
+<strong> DOWNLOAD &#8230; OK</strong><br />
+<strong> Ctrl+C to exit &#8230;</strong><br />
+<strong> #</strong><br />
+<strong> DFU complete CRC32: 0x3756edb6</strong><br />
+<strong> DOWNLOAD &#8230; OK</strong><br />
+<strong> Ctrl+C to exit &#8230;</strong><br />
+<strong> #</strong><br />
+<strong> DFU complete CRC32: 0x6ad212b0</strong><br />
+<strong> DOWNLOAD &#8230; OK</strong><br />
+<strong> Ctrl+C to exit &#8230;</strong><br />
+<strong> #</strong><br />
+<strong> DFU complete CRC32: 0xe511e42b</strong><br />
+<strong> DOWNLOAD &#8230; OK</strong><br />
+<strong> Ctrl+C to exit &#8230;</strong><br />
+<strong> #</strong><br />
+<strong> DFU complete CRC32: 0xe511e42b</strong><br />
+<strong> DOWNLOAD &#8230; OK</strong><br />
+<strong> Ctrl+C to exit &#8230;</strong><br />
+<strong> resetting &#8230;</strong></p>
+<p><strong>******************************</strong><br />
+<strong> PSH KERNEL VERSION: b0182b2b</strong><br />
+<strong> WR: 20104000</strong><br />
+<strong> ******************************</strong><br />
+<strong> SCU IPC: 0x800000d0 0xfffce92c</strong><br />
+<strong> PSH miaHOB version: TNG.B0.VVBD.0000000c</strong><br />
+<strong> microkernel built 11:24:08 Feb 5 2015</strong></p>
+<p><strong>******* PSH loader *******</strong><br />
+<strong> PCM page cache size = 192 KB</strong><br />
+<strong> Cache Constraint = 0 Pages</strong><br />
+<strong> Arming IPC driver ..</strong><br />
+<strong> Adding page store pool ..</strong><br />
+<strong> PagestoreAddr(IMR Start Address) = 0x04899000</strong><br />
+<strong> pageStoreSize(IMR Size) = 0x00080000</strong></p>
+<p><strong>*** Ready to receive application ***</strong><br />
+<strong> U-Boot 2014.04 (Jun 19 2015 &#8211; 12:05:55)</strong><br />
+<strong> Watchdog enabled</strong><br />
+<strong> DRAM: 980.6 MiB</strong><br />
+<strong> MMC: tangier_sdhci: 0</strong><br />
+<strong> In: serial</strong><br />
+<strong> Out: serial</strong><br />
+<strong> Err: serial</strong><br />
+<strong> Writing to redundant MMC(0)&#8230; done</strong><br />
+<strong> Writing to MMC(0)&#8230; done</strong><br />
+<strong> Hit any key to stop autoboot: 0</strong><br />
+<strong> Target:blank</strong><br />
+<strong> Partitioning using GPT</strong><br />
+<strong> Writing GPT: success!</strong><br />
+<strong> Saving Environment to MMC&#8230;</strong><br />
+<strong> Writing to redundant MMC(0)&#8230; done</strong><br />
+<strong> Flashing already done&#8230;</strong><br />
+<strong> GADGET DRIVER: usb_dnl_dfu</strong><br />
+<strong> #</strong><br />
+<strong> DFU complete CRC32: 0xb98db2f8</strong><br />
+<strong> DOWNLOAD &#8230; OK</strong><br />
+<strong> Ctrl+C to exit &#8230;</strong><br />
+<strong> pageStoreSize(IMR Size) = 0x00080000</strong></p>
+<p><strong>*** Ready to receive application ***</strong><br />
+<strong> U-Boot 2014.04 (Jun 19 2015 &#8211; 12:05:55)</strong><br />
+<strong> Watchdog enabled</strong><br />
+<strong> DRAM: 980.6 MiB</strong><br />
+<strong> MMC: tangier_sdhci: 0</strong><br />
+<strong> In: serial</strong><br />
+<strong> Out: serial</strong><br />
+<strong> Err: serial</strong><br />
+<strong> Writing to redundant MMC(0)&#8230; done</strong><br />
+<strong> Writing to MMC(0)&#8230; done</strong><br />
+<strong> Hit any key to stop autoboot: 0</strong><br />
+<strong> Target:blank</strong><br />
+<strong> Partitioning using GPT</strong><br />
+<strong> Writing GPT: success!</strong><br />
+<strong> Saving Environment to MMC&#8230;</strong><br />
+<strong> Writing to redundant MMC(0)&#8230; done</strong><br />
+<strong> Flashing already done&#8230;</strong><br />
+<strong> GADGET DRIVER: usb_dnl_dfu</strong><br />
+<strong> #</strong><br />
+<strong> DFU complete CRC32: 0xb98db2f8</strong><br />
+<strong> DOWNLOAD &#8230; OK</strong><br />
+<strong> Ctrl+C to exit &#8230;</strong><br />
+<strong> pageStoreSize(IMR Size) = 0x00080000</strong></p>
+<p><strong>*** Ready to receive application ***</strong></p>
+<p><strong>U-Boot 2014.04 (Jun 19 2015 &#8211; 12:05:55)</strong></p>
+<p><strong>Watchdog enabled</strong><br />
+<strong> DRAM: 980.6 MiB</strong><br />
+<strong> MMC: tangier_sdhci: 0</strong><br />
+<strong> In: serial</strong><br />
+<strong> Out: serial</strong><br />
+<strong> Err: serial</strong><br />
+<strong> Writing to redundant MMC(0)&#8230; done</strong><br />
+<strong> Writing to MMC(0)&#8230; done</strong><br />
+<strong> Hit any key to stop autoboot: 0</strong><br />
+<strong> Target:blank</strong><br />
+<strong> Partitioning using GPT</strong><br />
+<strong> Writing GPT: success!</strong><br />
+<strong> Saving Environment to MMC&#8230;</strong><br />
+<strong> Writing to redundant MMC(0)&#8230; done</strong><br />
+<strong> Flashing already done&#8230;</strong><br />
+<strong> GADGET DRIVER: usb_dnl_dfu</strong><br />
+<strong> #</strong><br />
+<strong> DFU complete CRC32: 0xb98db2f8</strong><br />
+<strong> DOWNLOAD &#8230; OK</strong><br />
+<strong> Ctrl+C to exit &#8230;</strong><br />
+<strong> ######################################################################################</strong></p>
+<p><strong>******* PSH loader *******</strong><br />
+<strong> PCM page cache size = 192 KB</strong><br />
+<strong> Cache Constraint = 0 Pages</strong><br />
+<strong> Arming IPC driver ..</strong><br />
+<strong> Adding page store pool ..</strong><br />
+<strong> PagestoreAddr(IMR Start Address) = 0x04899000</strong><br />
+<strong> pageStoreSize(IMR Size) = 0x00080000</strong></p>
+<p><strong>*** Ready to receive application ***</strong><br />
+<strong> U-Boot 2014.04 (Jun 19 2015 &#8211; 12:05:55)</strong><br />
+<strong> Watchdog enabled</strong><br />
+<strong> DRAM: 980.6 MiB</strong><br />
+<strong> MMC: tangier_sdhci: 0</strong><br />
+<strong> In: serial</strong><br />
+<strong> Out: serial</strong><br />
+<strong> Err: serial</strong><br />
+<strong> Writing to redundant MMC(0)&#8230; done</strong><br />
+<strong> Writing to MMC(0)&#8230; done</strong><br />
+<strong> Hit any key to stop autoboot: 0</strong><br />
+<strong> Target:blank</strong><br />
+<strong> Partitioning using GPT</strong><br />
+<strong> Writing GPT: success!</strong><br />
+<strong> Saving Environment to MMC&#8230;</strong><br />
+<strong> Writing to redundant MMC(0)&#8230; done</strong><br />
+<strong> Flashing already done&#8230;</strong><br />
+<strong> GADGET DRIVER: usb_dnl_dfu</strong><br />
+<strong> #</strong><br />
+DFU complete CRC32: 0xb98db2f8<br />
+DOWNLOAD &#8230; OK<br />
+Ctrl+C to exit &#8230;<br />
+##############################################################################################</p>
+<p>Se tudo funcionou corretamente, teremos a seguinte tela:</p>
+<p><img class="alignnone size-full wp-image-4215" src="https://cabelovivaolinux.files.wordpress.com/2016/03/yocto03.png" alt="yocto03" width="1160" height="741" /></p>
+]]></content:encoded>
+			<wfw:commentRss>https://lizards.opensuse.org/2016/10/03/atualizando-o-edison-intel-no-opensuse/feed/</wfw:commentRss>
+		<slash:comments>0</slash:comments>
+		</item>
+	</channel>
+</rss>

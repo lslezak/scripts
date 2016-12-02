@@ -18,7 +18,7 @@ GEM
       pathutil (~> 0.9)
       rouge (~> 1.7)
       safe_yaml (~> 1.0)
-    jekyll-import (0.11.0)
+    jekyll-import (0.12.0)
       fastercsv
       jekyll (>= 1.4)
       nokogiri
@@ -26,7 +26,7 @@ GEM
       sass (~> 3.4)
     jekyll-watch (1.5.0)
       listen (~> 3.0, < 3.1)
-    kramdown (1.13.0)
+    kramdown (1.13.1)
     liquid (3.0.6)
     listen (3.0.8)
       rb-fsevent (~> 0.9, >= 0.9.4)
@@ -50,6 +50,7 @@ PLATFORMS
 
 DEPENDENCIES
   jekyll-import
+  kramdown
 
 BUNDLED WITH
    1.10.6

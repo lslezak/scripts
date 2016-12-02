@@ -1,3 +1,13 @@
+# parsing HTML
+require "nokogiri"
+# URL parsing
+require "uri"
+# HTTP download
+require "net/http"
+# HTML -> Markdown conversion
+require "kramdown"
+
+# The code is based on the JekyllImport::Importers::RSS code
 module JekyllImport
   module Importers
     class LizardRSS < Importer
@@ -21,7 +31,7 @@ module JekyllImport
           safe_yaml
         ])
       end
-      
+
       # Process the import.
       #
       # source - a URL or a local file String.
@@ -38,45 +48,30 @@ module JekyllImport
 
         rss.items.each do |item|
           # convert only the YaST team posts
-          next unless item.dc_creator == "Yast Team"
-
-          formatted_date = item.date.strftime('%Y-%m-%d')
-          post_name = item.title.split(%r{ |!|/|:|&|-|$|,|\(|\)}).map do |i|
-            i.downcase if i != ''
-          end.compact.join('-')
-          name = "#{formatted_date}-#{post_name}"
-
-          header = {
-            'layout' => 'post',
-            'title' => item.title,
-            'description' => item.description,
-            'category' => 'YaST',
-            'tags' => 'Report'
-            # TODO: include the publishing date
-          }
-
-          html_path = "_posts/#{name}.html"
-          md_path = "_posts/#{name}.md"
-          
-          post = item.content_encoded
-
-          # emoji conversion
-          replace_emoji(post)
-          
-          # TODO: download images
-          File.write(html_path, post)
-
-          # convert HTML to Markdown
-          `html2text-python2.7 #{html_path} > #{md_path}`
-
-          # add the YAML header
-          md_content = File.read(md_path)
-          File.write(md_path, header.to_yaml + "---\n\n" + md_content)
-
+          import_post(item) if item.dc_creator == "Yast Team"
         end
       end
 
-      # simple stupid emoji replacement
+      def self.import_post(item)
+        formatted_date = item.date.strftime('%Y-%m-%d')
+        post = item.content_encoded
+
+        # convert MSDOS newlines to Unix newlines
+        post.gsub!(/\r\n?/, "\n")
+        # emoji conversion
+        replace_emoji(post)
+        # download images from lizards.opensuse.org and replace the URLs
+        download_and_replace_images(post, "images/#{formatted_date}")
+        # convert to Markdown
+        md_content = Kramdown::Document.new(post, :html_to_native => true).to_kramdown
+
+        file_path = "_posts/#{formatted_date}-#{post_name(item)}.md"
+        # add the YAML header
+        File.write(file_path, yaml_header(item) + "---\n\n" + md_content)
+      end
+
+      # simple&stupid emoji replacement, we used just few emoticons
+      # do not overengeneer
       EMOJI = {
         '<img src="https://s.w.org/images/core/emoji/72x72/1f609.png" alt="&#x1f609;" class="wp-smiley" style="height: 1em; max-height: 1em;" />' => ":wink:",
         '<img src="https://s.w.org/images/core/emoji/2/72x72/1f609.png" alt="&#x1f609;" class="wp-smiley" style="height: 1em; max-height: 1em;" />' => ":wink:",
@@ -86,9 +81,73 @@ module JekyllImport
 
       def self.replace_emoji(post)
         EMOJI.each do |link, emoji|
-          puts "Found #{emoji}" if post.include?(link)
           post.gsub!(link, emoji)
         end
+      end
+
+      def self.download_and_replace_images(post, download_dir)
+        tree = Nokogiri::HTML(post)
+
+        # replace images
+        download_and_replace_tag(tree, download_dir, "img", "src")
+        # replace links to images
+        download_and_replace_tag(tree, download_dir, "a", "href")
+
+        # build the HTML back from the modified tree, remove the body wrapper
+        # added by Nokogiri
+        post.replace(tree.xpath("//body").children.to_html)
+      end
+
+      def self.download_and_replace_tag(tree, download_dir, tag, attribute)
+        # replace only URLs pointing to an uploaded content
+        tree.xpath("//#{tag}[contains(@#{attribute},\"//lizards.opensuse.org/wp-content/uploads\")]").each do |img|
+          src = img.attribute(attribute).value
+          # add HTTPS if there is no protocol
+          src = "https:#{src}" if src.start_with?("//")
+          url = URI(src)
+
+          if url.scheme == "http" || url.scheme == "https"
+            file = File.join(download_dir, File.basename(url.path))
+            if !File.exist?(file)
+              FileUtils.mkdir_p(download_dir)
+              download(url, file)
+            end
+            img.attribute(attribute).value = "../../../../#{file}"
+          else
+            $stderr.puts "Unknown protocol in URL: #{src}"
+          end
+        end
+      end
+
+      def self.download(url, file)
+        puts "Downloading #{url}..."
+        content = Net::HTTP.get(url)
+
+        puts "Saving to #{file}"
+        File.write(file, content)
+      end
+
+      def self.yaml_header(item)
+        header = {
+          'layout' => 'post',
+          'date' => item.pubDate,
+          'title' => item.title,
+          'description' => item.description,
+          # the catogires and tags must be fixed manually
+          # RSS feed mixes both into a single list
+          'category' => item.categories.map(&:content),
+          'tags' => item.categories.map(&:content),
+        }
+
+        header.to_yaml
+      end
+
+      def self.post_name(item)
+        name = item.title.split(%r{ |!|’|/|:|&|-|$|,|\(|\)}).map do |i|
+          i.downcase if i != ''
+        end
+
+        name.compact.join('-')
       end
     end
   end

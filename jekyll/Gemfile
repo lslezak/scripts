@@ -1,2 +1,4 @@
-source 'https://rubygems.org'
-gem 'jekyll-import'
+source "https://rubygems.org"
+gem "jekyll-import"
+gem "kramdown"
+# gem "byebug"
