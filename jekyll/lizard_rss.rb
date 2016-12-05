@@ -100,8 +100,8 @@ module JekyllImport
 
       def self.download_and_replace_tag(tree, download_dir, tag, attribute)
         # replace only URLs pointing to an uploaded content
-        tree.xpath("//#{tag}[contains(@#{attribute},\"//lizards.opensuse.org/wp-content/uploads\")]").each do |img|
-          src = img.attribute(attribute).value
+        tree.xpath("//#{tag}[contains(@#{attribute},\"//lizards.opensuse.org/wp-content/uploads\")]").each do |node|
+          src = node.attribute(attribute).value
           # add HTTPS if there is no protocol
           src = "https:#{src}" if src.start_with?("//")
           url = URI(src)
@@ -112,10 +112,13 @@ module JekyllImport
               FileUtils.mkdir_p(download_dir)
               download(url, file)
             end
-            img.attribute(attribute).value = "../../../../#{file}"
+            # use relative path so it does not depend on the root location
+            node.attribute(attribute).value = "../../../../#{file}"
           else
             $stderr.puts "Unknown protocol in URL: #{src}"
           end
+
+          attributes_cleanup(node)
         end
       end
 
@@ -148,6 +151,15 @@ module JekyllImport
         end
 
         name.compact.join('-')
+      end
+
+      # delete unused attributes
+      def self.attributes_cleanup(node)
+        node.delete("width")
+        node.delete("height")
+        node.delete("class")
+        node.delete("srcset")
+        node.delete("sizes")
       end
     end
   end
