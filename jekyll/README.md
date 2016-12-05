@@ -14,14 +14,22 @@ The convertor uses the patched RSS feed importer (http://import.jekyllrb.com/doc
 The posts are extracted from the RSS feed.
 
 However, the feed contains only few latest posts, fortunately the older feeds
-can be found in the Web archive at http://web.archive.org/web/*/https://lizards.opensuse.org/feed/
+can be found in the Web archive at http://web.archive.org/web/\*/https://lizards.opensuse.org/feed/
 
-Specifically these old feeds were used (saved to `feed*.xml` files):
+Specifically these old feeds were used:
 
 - http://web.archive.org/web/20160609193427/https://lizards.opensuse.org/feed/
 - http://web.archive.org/web/20160417063652/https://lizards.opensuse.org/feed/
 - http://web.archive.org/web/20160306111719/https://lizards.opensuse.org/feed/
 - http://web.archive.org/web/20160112084402/https://lizards.opensuse.org/feed/
+
+Unfortunately some posts are missing in the feeds as the Web Archiver archived
+the feed only few times in the history.
+
+The missing posts are imported directly from a saved lizards.o.o. HTML page.
+
+All needed posts to import are stored locally in the `feed*.xml` and
+`page2.html` files.
 
 # Starting the Import
 

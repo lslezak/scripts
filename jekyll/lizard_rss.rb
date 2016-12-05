@@ -53,6 +53,7 @@ module JekyllImport
       end
 
       def self.import_post(item)
+        puts "Importing post \"#{item.title}\"..."
         formatted_date = item.date.strftime('%Y-%m-%d')
         post = item.content_encoded
 
