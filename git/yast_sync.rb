@@ -73,8 +73,8 @@ class Threading
 end
 
 def read_yast_repos
-  JSON.parse(`curl -s 'https://api.github.com/orgs/yast/repos?page=1&per_page=100'`).map{|r| r["name"]}.concat(
-    JSON.parse(`curl -s 'https://api.github.com/orgs/yast/repos?page=2&per_page=100'`).map{|r| r["name"]}
+  JSON.parse(`curl --netrc -s 'https://api.github.com/orgs/yast/repos?page=1&per_page=100'`).map{|r| r["name"]}.concat(
+    JSON.parse(`curl --netrc -s 'https://api.github.com/orgs/yast/repos?page=2&per_page=100'`).map{|r| r["name"]}
   )
 end
 
