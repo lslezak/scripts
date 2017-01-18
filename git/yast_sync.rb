@@ -204,3 +204,8 @@ Threading.in_parallel(repos) do |repo|
   # add your code here to run it in each git repo:
   # run_in(dir, "cmd")
 end
+
+obsolete = Dir["*"] & IGNORED_REPOS.map{|r| r.sub(/^yast-/, "")}
+if !obsolete.empty?
+  puts "Found obsolete directories: #{obsolete}"
+end
