@@ -159,12 +159,15 @@ IGNORED_REPOS = [
   "yast-slide-show",
   "yast-tv",
   "yast-ui-qt-tests",
+  "yast-update-alternatives",
   "yast-uml",
   "yast-wagon",
   "yast-you-server",
   "yast-yxmlconv",
   "yast-y2pmsh",
   "yast-y2r-tools",
+  "ycp-killer",
+  "y2r",
 ]
 
 repos = repos - IGNORED_REPOS
