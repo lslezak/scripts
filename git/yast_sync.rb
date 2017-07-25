@@ -168,6 +168,7 @@ IGNORED_REPOS = [
   "yast-y2r-tools",
   "ycp-killer",
   "y2r",
+  "travis_old",
 ]
 
 repos = repos - IGNORED_REPOS
