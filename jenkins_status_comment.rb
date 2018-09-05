@@ -10,6 +10,7 @@
 require "net/http"
 require "uri"
 require "json"
+require "tempfile"
 
 # get the  GitHub repository name in the current directory
 # @return [String,nil] repository or nil if not found
@@ -53,7 +54,7 @@ def git_pr
   # containing the pull request number
   git_log = `git log -n 1 --oneline`
   if git_log.match(/Merge pull request #(\d+) from/)
-    return Regexp.last_match[1]
+    return "number" => Regexp.last_match[1]
   end
   
   # get the closed pull requests
@@ -147,7 +148,10 @@ def parse_log(log, pr)
     exit 1
   end
 
+  # FIXME: read by lines, the log might be HUGE...
   info = osc_info(File.read(log))
+
+  return nil unless info
 
   unless pr
     return ":heavy_check_mark: [Jenkins job ##{ENV["BUILD_DISPLAY_NAME"]}]" \
@@ -164,56 +168,68 @@ end
 
 require 'optparse'
 
-pr = git_pr
-
-if pr.nil?
-  puts "ERROR: Cannot find the respective pull request"
-  exit 1
-end
-
 message = nil
 dry_run = false
+command = nil
+status = nil
+
 OptionParser.new do |opts|
   opts.on("-d", "--dry-run", "Dry run (do not send the comment)") do
     dry_run = true
   end
-
-  opts.on("-f", "--failed", "Report build failure") do
-    message = ":x: [Jenkins job ##{ENV["BUILD_DISPLAY_NAME"]}](#{ENV["BUILD_URL"]}) failed."
-  end
-
-  opts.on("-s", "--success", "Report sucessful build") do
-    message = ":heavy_check_mark: [Jenkins job ##{ENV["BUILD_DISPLAY_NAME"]}]" \
-      "(#{ENV["BUILD_URL"]}) successfully finished."
-  end
-
-  opts.on("-l", "--log=FILE", "Report sucess and send the link for the submit " \
-    "request found in the log file") do |f|
-    message = parse_log(f, pr)
+  
+  opts.on("-c", "--command COMMAND", "Run the specified command") do |cmd|
+    command = cmd
   end
 end.parse!
+
+unless command
+  puts "Missing --command parameter!"
+  exit 1
+end
+
+pr = git_pr
 
 headers = {
   "Content-Type"  => "text/json",
   "Authorization" => "token #{ENV["GH_TOKEN"]}"
 }
+  
+Tempfile.open("jenkinslog") do |f|
+  system "#{command} | tee #{f.path}"
+  # FIXME this is status of "tee", i.e. always success... :-/
+  status = $?
+  puts "Result: #{status.inspect}"
+  message = parse_log(f.path, pr) if pr
+end
+
+if !pr
+  puts "Pull request not found, not adding GitHub comment"
+  exit status.exitstatus
+end
+
+if !message
+  message = if status.success?
+    ":heavy_check_mark: [Jenkins job ##{ENV["BUILD_DISPLAY_NAME"]}]" \
+    "(#{ENV["BUILD_URL"]}) successfully finished."
+  else
+    ":x: [Jenkins job ##{ENV["BUILD_DISPLAY_NAME"]}](#{ENV["BUILD_URL"]}) failed."
+  end
+end
+
 
 url = "https://api.github.com/repos/#{git_repo}/issues/#{pr["number"]}/comments"
-
-if message.nil? || message.empty?
-  puts "ERROR: Cannot build a comment message"
-  exit 1
-end
 
 puts "Pull request: https://github.com/yast/#{git_repo}/pull/#{pr["number"]}"
 puts "Comment: #{message}"
 
-exit 0 if dry_run
+exit status.exitstatus if dry_run
 
 res = http_post(url, headers, "body" => message)
 if res.is_a?(Net::HTTPSuccess)
   puts " Success"
 else
   puts " Error #{res.code}: #{res.body}"
-  exit(1)
 end
+
+exit status.exitstatus
