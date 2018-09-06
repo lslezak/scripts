@@ -41,12 +41,8 @@ def closed_pulls
     "sort" => "updated",
     "direction" => "desc"
   }
-  
-  http_get("https://api.github.com/repos/#{git_repo}/pulls", query)
-end
 
-def pull_details(id)
-  http_get("https://api.github.com/repos/#{git_repo}/pulls/id")
+  http_get("https://api.github.com/repos/#{git_repo}/pulls", query)
 end
 
 # Get the pull request for the current Git checkout
@@ -59,7 +55,7 @@ def git_pr
   if git_log.match(/Merge pull request #(\d+) from/)
     return "number" => Regexp.last_match[1]
   end
-  
+
   # otherwise we need to find the latest commit in the merged
   # pull requests
 
@@ -80,25 +76,17 @@ end
 # and the context (OBS/IBS)
 # @return [Hash<Symbol, String>] SR data
 def osc_info(log)
-  return unless log =~ /^osc -A '([^']*)'/
-
-  if Regexp.last_match[1] == "https://api.suse.de/"
-    link_host = "build.suse.de"
-    bs = "IBS"
-  else
-    link_host = "build.opensuse.org"
-    bs = "OBS"
+  if log =~ /^osc -A '([^']*)'/
+    if Regexp.last_match[1] == "https://api.suse.de/"
+      return { bs: "IBS"}
+    else
+      return { bs: "OBS"}
+    end
   end
 
-  return unless log =~ /^created request id ([0-9]+)/
-
-  obs_url = "https://" + link_host + "/request/show/" + Regexp.last_match[1]
-
-  {
-    bs:   bs,
-    sr:   Regexp.last_match[1],
-    url:  obs_url
-  }
+  if log =~ /^created request id ([0-9]+)/
+    return { sr:   Regexp.last_match[1] }
+  end
 end
 
 # post the status at GitHub, runs HTTP POST
@@ -111,12 +99,7 @@ def http_request(url, type, data, query)
   https = Net::HTTP.new(uri.host, uri.port)
   https.use_ssl = true if uri.scheme == "https"
 
-  headers = {
-    "Content-Type"  => "text/json"
-  }
-  headers["Authorization"] = "token #{ENV["GH_TOKEN"]}" if ENV["GH_TOKEN"]
-
-  request = type.new(uri.request_uri, headers)
+  request = type.new(uri.request_uri, http_headers)
   request.body = data.to_json unless data.nil?
 
   print "Sending #{type} request to #{url}..."
@@ -148,26 +131,39 @@ def http_get(url, query = nil)
   http_request(url, Net::HTTP::Get, nil, query)
 end
 
-def parse_log(log, pr)
-  unless File.exist?(log)
-    $stderr.puts "File #{log} does not exist!"
-    exit 1
+def build_comment(status, log)
+  message = if status.success?
+    ":heavy_check_mark: [Jenkins job ##{ENV["BUILD_DISPLAY_NAME"]}]" \
+    "(#{ENV["BUILD_URL"]}) successfully finished"
+  else
+    ":x: [Jenkins job ##{ENV["BUILD_DISPLAY_NAME"]}](#{ENV["BUILD_URL"]}) failed"
   end
 
-  # FIXME: read by lines, the log might be HUGE...
-  info = osc_info(File.read(log))
+  info = {}
 
-  return nil unless info
-
-  unless pr
-    return ":heavy_check_mark: [Jenkins job ##{ENV["BUILD_DISPLAY_NAME"]}]" \
-      "(#{ENV["BUILD_URL"]}) successfully finished."
+  # read by lines, the log might be HUGE...
+  f = File.new(log)
+  f.each do |line|
+    line_info = osc_info(line)
+    info.merge!(line_info) if line_info
   end
+  f.close
 
-  jenkins = " by [Jenkins job #{ENV["BUILD_DISPLAY_NAME"]}](#{ENV["BUILD_URL"]})" if ENV["BUILD_URL"]
+  return message if info.empty?
 
-  ":heavy_check_mark: Created #{info[:bs]} submit " \
-      "[request ##{info[:sr]}](#{info[:url]})#{jenkins}."
+  host = (info[:bs] == "IBS") ? "build.suse.de" : "build.opensuse.org"
+  url = "https://#{host}/request/show/#{info[:sr]}"
+
+  message << "\n:heavy_check_mark: Created #{info[:bs]} submit " \
+      "[request ##{info[:sr]}](#{url})"
+end
+
+def http_headers(content_type = "text/json")
+  headers = {
+    "Content-Type"  => content_type
+  }
+  headers["Authorization"] = "token #{ENV["GH_TOKEN"]}" if ENV["GH_TOKEN"]
+  headers
 end
 
 ##############################################################################
@@ -182,12 +178,20 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-# merge all remaining arguments
-command = ARGV.join(" ")
-
-if command.empty?
+if ARGV.empty?
   puts "Missing command parameter!"
   exit 1
+end
+
+status = nil
+message = nil
+Tempfile.open("jenkinslog") do |f|
+  command = ARGV.map{|c| Shellwords.escape(c)}.join(" ") + " | tee #{f.path}"
+  cmd = ["bash",  "-o",  "pipefail", "-c", command ]
+  system(*cmd)
+  status = $?
+  puts "Result: PID #{status.pid} exited with value #{status.exitstatus}"
+  message = build_comment(status, f.path)
 end
 
 puts "Scanning for a pull request..."
@@ -197,47 +201,20 @@ if pr
   puts "Found pull request ##{pr["number"]}"
 else
   puts "Pull request not found"
-end
-
-headers = {
-  "Content-Type"  => "text/json",
-  "Authorization" => "token #{ENV["GH_TOKEN"]}"
-}
-
-status = nil
-message = nil
-Tempfile.open("jenkinslog") do |f|
-  system "bash -o pipefail -c #{Shellwords.escape("#{command} | tee #{f.path}")}"
-  status = $?
-  puts "Command result: #{status.inspect}"
-  message = parse_log(f.path, pr) if pr
-end
-
-exit status.exitstatus
-
-if !pr
-  puts "Pull request not found, not adding GitHub comment"
   exit status.exitstatus
 end
-
-if !message
-  message = if status.success?
-    ":heavy_check_mark: [Jenkins job ##{ENV["BUILD_DISPLAY_NAME"]}]" \
-    "(#{ENV["BUILD_URL"]}) successfully finished."
-  else
-    ":x: [Jenkins job ##{ENV["BUILD_DISPLAY_NAME"]}](#{ENV["BUILD_URL"]}) failed."
-  end
-end
-
 
 url = "https://api.github.com/repos/#{git_repo}/issues/#{pr["number"]}/comments"
 
 puts "Adding comment \"#{message}\""
-puts "to pull request https://github.com/yast/#{git_repo}/pull/#{pr["number"]}"
+puts "to pull request https://github.com/#{git_repo}/pull/#{pr["number"]}"
 
-exit status.exitstatus if dry_run
+if dry_run
+  puts "Dry-run active stopping here."
+  exit status.exitstatus
+end
 
-res = http_post(url, headers, "body" => message)
+res = http_post(url, http_headers, "body" => message)
 if res.is_a?(Net::HTTPSuccess)
   puts " Success"
 else
