@@ -1,16 +1,19 @@
 #! /usr/bin/env ruby
-
+#
 # This script parses the "rake osc:sr" output and creates a SR link comment
 # at the respective GitHub repository
 #
 # Usage: Export the GitHub token in the GH_TOKEN environment variable, then run
-#   rake osc:sr | tee rake_output
-#   ./travis-status-update -l rake_output
+#   ./travis-status-update <command>
+#
+# example:
+#   ./travis-status-update rake osc:sr
 
 require "net/http"
 require "uri"
 require "json"
 require "tempfile"
+require "shellwords"
 
 # get the  GitHub repository name in the current directory
 # @return [String,nil] repository or nil if not found
@@ -57,6 +60,9 @@ def git_pr
     return "number" => Regexp.last_match[1]
   end
   
+  # otherwise we need to find the latest commit in the merged
+  # pull requests
+
   # get the closed pull requests
   response = closed_pulls
   return nil unless response.is_a?(Net::HTTPSuccess)
@@ -64,7 +70,7 @@ def git_pr
   pulls = JSON.parse(response.body)
   commit = git_commit
 
-  # check if the latest commit sha matches any "merge_commit_sha" in the pulls
+  # check if the latest commit SHA matches any "merge_commit_sha" in the pulls
   pulls.find do |pull|
     pull["merge_commit_sha"] == commit
   end
@@ -78,10 +84,10 @@ def osc_info(log)
 
   if Regexp.last_match[1] == "https://api.suse.de/"
     link_host = "build.suse.de"
-    context = "IBS"
+    bs = "IBS"
   else
     link_host = "build.opensuse.org"
-    context = "OBS"
+    bs = "OBS"
   end
 
   return unless log =~ /^created request id ([0-9]+)/
@@ -89,9 +95,9 @@ def osc_info(log)
   obs_url = "https://" + link_host + "/request/show/" + Regexp.last_match[1]
 
   {
-    context: context,
-    sr:      Regexp.last_match[1],
-    url:     obs_url
+    bs:   bs,
+    sr:   Regexp.last_match[1],
+    url:  obs_url
   }
 end
 
@@ -160,7 +166,7 @@ def parse_log(log, pr)
 
   jenkins = " by [Jenkins job #{ENV["BUILD_DISPLAY_NAME"]}](#{ENV["BUILD_URL"]})" if ENV["BUILD_URL"]
 
-  ":heavy_check_mark: Created #{info[:context]} submit " \
+  ":heavy_check_mark: Created #{info[:bs]} submit " \
       "[request ##{info[:sr]}](#{info[:url]})#{jenkins}."
 end
 
@@ -168,40 +174,46 @@ end
 
 require 'optparse'
 
-message = nil
 dry_run = false
-command = nil
-status = nil
 
 OptionParser.new do |opts|
   opts.on("-d", "--dry-run", "Dry run (do not send the comment)") do
     dry_run = true
   end
-  
-  opts.on("-c", "--command COMMAND", "Run the specified command") do |cmd|
-    command = cmd
-  end
 end.parse!
 
-unless command
-  puts "Missing --command parameter!"
+# merge all remaining arguments
+command = ARGV.join(" ")
+
+if command.empty?
+  puts "Missing command parameter!"
   exit 1
 end
 
+puts "Scanning for a pull request..."
 pr = git_pr
+
+if pr
+  puts "Found pull request ##{pr["number"]}"
+else
+  puts "Pull request not found"
+end
 
 headers = {
   "Content-Type"  => "text/json",
   "Authorization" => "token #{ENV["GH_TOKEN"]}"
 }
-  
+
+status = nil
+message = nil
 Tempfile.open("jenkinslog") do |f|
-  system "#{command} | tee #{f.path}"
-  # FIXME this is status of "tee", i.e. always success... :-/
+  system "bash -o pipefail -c #{Shellwords.escape("#{command} | tee #{f.path}")}"
   status = $?
-  puts "Result: #{status.inspect}"
+  puts "Command result: #{status.inspect}"
   message = parse_log(f.path, pr) if pr
 end
+
+exit status.exitstatus
 
 if !pr
   puts "Pull request not found, not adding GitHub comment"
@@ -220,8 +232,8 @@ end
 
 url = "https://api.github.com/repos/#{git_repo}/issues/#{pr["number"]}/comments"
 
-puts "Pull request: https://github.com/yast/#{git_repo}/pull/#{pr["number"]}"
-puts "Comment: #{message}"
+puts "Adding comment \"#{message}\""
+puts "to pull request https://github.com/yast/#{git_repo}/pull/#{pr["number"]}"
 
 exit status.exitstatus if dry_run
 
