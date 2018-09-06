@@ -140,7 +140,6 @@ def build_comment(status, log)
   end
 
   info = {}
-
   # read by lines, the log might be HUGE...
   f = File.new(log)
   f.each do |line|
@@ -168,18 +167,9 @@ end
 
 ##############################################################################
 
-require 'optparse'
-
-dry_run = false
-
-OptionParser.new do |opts|
-  opts.on("-d", "--dry-run", "Dry run (do not send the comment)") do
-    dry_run = true
-  end
-end.parse!
-
 if ARGV.empty?
-  puts "Missing command parameter!"
+  puts "Error: Missing command parameter!"
+  puts "Usage: #{File.basename($0)} <command> [arguments]"
   exit 1
 end
 
@@ -209,10 +199,8 @@ url = "https://api.github.com/repos/#{git_repo}/issues/#{pr["number"]}/comments"
 puts "Adding comment \"#{message}\""
 puts "to pull request https://github.com/#{git_repo}/pull/#{pr["number"]}"
 
-if dry_run
-  puts "Dry-run active stopping here."
-  exit status.exitstatus
-end
+# FIXME
+# exit status.exitstatus
 
 res = http_post(url, http_headers, "body" => message)
 if res.is_a?(Net::HTTPSuccess)
