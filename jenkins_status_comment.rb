@@ -140,11 +140,12 @@ end
 # @return [String] comment text
 #
 def build_comment(status, log)
+  jenkins = (ENV["BUILD_URL"] && ENV["BUILD_URL"].include?("ci.suse.de")) ? "Internal" : "Public"
   message = if status.success?
-    ":heavy_check_mark: [Jenkins job ##{ENV["BUILD_DISPLAY_NAME"]}]" \
+    ":heavy_check_mark: #{jenkins} Jenkins [job #{ENV["BUILD_DISPLAY_NAME"]}]" \
     "(#{ENV["BUILD_URL"]}) successfully finished"
   else
-    ":x: [Jenkins job ##{ENV["BUILD_DISPLAY_NAME"]}](#{ENV["BUILD_URL"]}) failed"
+    ":x: #{jenkins} Jenkins [job #{ENV["BUILD_DISPLAY_NAME"]}](#{ENV["BUILD_URL"]}) failed"
   end
 
   info = {}
@@ -156,7 +157,7 @@ def build_comment(status, log)
   end
   f.close
 
-  return message if info.empty?
+  return message unless info[:sr]
 
   host = (info[:bs] == "IBS") ? "build.suse.de" : "build.opensuse.org"
   url = "https://#{host}/request/show/#{info[:sr]}"
@@ -180,6 +181,13 @@ def http_headers(content_type = "text/json")
   headers
 end
 
+#
+# Send the comment to a GitHub pull request
+#
+# @param message [String] the comment text
+# @param repo [String] the repository
+# @param pull_number [Integer] the pull request number
+#
 def send_comment(message, repo, pull_number)
   url = "https://api.github.com/repos/#{repo}/issues/#{pull_number}/comments"
 
