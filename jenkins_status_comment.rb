@@ -48,7 +48,7 @@ end
 # Get the pull request for the current Git checkout
 # @return [Hash] Parsed GitHub response
 #
-def git_pr
+def github_pull
   # simple case - merged with "Merge" button at GitHub with the default message
   # containing the pull request number
   git_log = `git log -n 1 --oneline`
@@ -131,6 +131,14 @@ def http_get(url, query = nil)
   http_request(url, Net::HTTP::Get, nil, query)
 end
 
+#
+# Build the comment text
+#
+# @param status [Process::Status] the result status of the executed command
+# @param log [String] the log file name
+#
+# @return [String] comment text
+#
 def build_comment(status, log)
   message = if status.success?
     ":heavy_check_mark: [Jenkins job ##{ENV["BUILD_DISPLAY_NAME"]}]" \
@@ -157,12 +165,33 @@ def build_comment(status, log)
       "[request ##{info[:sr]}](#{url})"
 end
 
+#
+# Build the HTTP headers hash
+#
+# @param content_type [String] the Content-Type value
+#
+# @return [Hash] the header hash
+#
 def http_headers(content_type = "text/json")
   headers = {
     "Content-Type"  => content_type
   }
   headers["Authorization"] = "token #{ENV["GH_TOKEN"]}" if ENV["GH_TOKEN"]
   headers
+end
+
+def send_comment(message, repo, pull_number)
+  url = "https://api.github.com/repos/#{repo}/issues/#{pull_number}/comments"
+
+  puts "Adding comment \"#{message}\""
+  puts "to pull request https://github.com/#{repo}/pull/#{pull_number}"
+
+  res = http_post(url, http_headers, "body" => message)
+  if res.is_a?(Net::HTTPSuccess)
+    puts " Success"
+  else
+    puts " Error #{res.code}: #{res.body}"
+  end
 end
 
 ##############################################################################
@@ -177,7 +206,7 @@ status = nil
 message = nil
 Tempfile.open("jenkinslog") do |f|
   command = ARGV.map{|c| Shellwords.escape(c)}.join(" ") + " | tee #{f.path}"
-  cmd = ["bash",  "-o",  "pipefail", "-c", command ]
+  cmd = ["bash",  "-o",  "pipefail", "-c", "--", command ]
   system(*cmd)
   status = $?
   puts "Result: PID #{status.pid} exited with value #{status.exitstatus}"
@@ -185,7 +214,7 @@ Tempfile.open("jenkinslog") do |f|
 end
 
 puts "Scanning for a pull request..."
-pr = git_pr
+pr = github_pull
 
 if pr
   puts "Found pull request ##{pr["number"]}"
@@ -194,19 +223,6 @@ else
   exit status.exitstatus
 end
 
-url = "https://api.github.com/repos/#{git_repo}/issues/#{pr["number"]}/comments"
-
-puts "Adding comment \"#{message}\""
-puts "to pull request https://github.com/#{git_repo}/pull/#{pr["number"]}"
-
-# FIXME
-# exit status.exitstatus
-
-res = http_post(url, http_headers, "body" => message)
-if res.is_a?(Net::HTTPSuccess)
-  puts " Success"
-else
-  puts " Error #{res.code}: #{res.body}"
-end
+send_comment(message, git_repo, pr["number"])
 
 exit status.exitstatus
