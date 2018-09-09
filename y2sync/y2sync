@@ -1,0 +1,162 @@
+#!/usr/bin/env ruby
+
+require "parallel"
+require "octokit"
+require "yaml"
+
+client = Octokit::Client.new
+client.auto_paginate = true
+
+module Y2sync
+  # FIXME: more branches
+  IGNORED_REPOS_SLE12 = []
+  IGNORED_REPOS_SLE15 = IGNORED_REPOS_SLE12.concat([])
+  IGNORED_REPOS_MASTER = IGNORED_REPOS_SLE15.concat([
+      "skelcd-control-SLES-for-VMware",
+      "rubygem-scc_api",
+      "yast-autofs",
+      "yast-backup",
+      "yast-bluetooth",
+      "yast-boot-server",
+      "yast-cd-creator",
+      "yast-certify",
+      "yast-cim",
+      "yast-databackup",
+      "yast-dbus-client",
+      "yast-debugger",
+      "yast-dialup",
+      "yast-dirinstall",
+      "yast-fax-server",
+      "yast-fingerprint-reader",
+      "yast-heartbeat",
+      "yast-hpc",
+      "yast-ipsec",
+      "yast-irda",
+      "yast-iscsi-server",
+      "yast-kerberos-client",
+      "yast-kerberos-server",
+      "yast-liby2util",
+      "yast-live-installer",
+      "yast-ldap-client",
+      "yast-ldap-server",
+      "yast-lxc",
+      "yast-meta",
+      "yast-mouse",
+      "yast-mail-server",
+      "yast-mysql-server",
+      "yast-ntsutils",
+      "yast-oem-installation",
+      "yast-online-update-test",
+      "yast-openschool",
+      "yast-openteam",
+      "yast-openvas-security-scanner",
+      "yast-openwsman-yast",
+      "yast-packagemanager",
+      "yast-packagemanager-test",
+      "yast-phone-services",
+      "yast-power-management",
+      "yast-profile-manager",
+      "yast-repair",
+      "yast-restore",
+      "yast-runlevel",
+      "yast-squidguard",
+      "yast-sshd",
+      "yast-sudo",
+      "yast-support",
+      "yast-system-profile",
+      "yast-system-update",
+      "yast-slepos-image-builder",
+      "yast-slepos-system-manager",
+      "yast-slide-show",
+      "yast-tv",
+      "yast-ui-qt-tests",
+      "yast-update-alternatives",
+      "yast-uml",
+      "yast-wagon",
+      "yast-you-server",
+      "yast-yxmlconv",
+      "yast-y2pmsh",
+      "yast-y2r-tools",
+      "ycp-killer",
+      "y2r",
+      "travis_old",
+    ]
+  )
+ 
+  class Config
+
+    FILE_NAME = ".y2sync.yml"
+
+    attr_reader :branch
+
+    attr_reader :empty_repos
+
+    def self.read(file = FILE_NAME)
+
+    end
+
+    def write(file = FILE_NAME)
+
+    end
+  end
+
+  class SyncResult
+    attr_reader :success
+    attr_reader :empty_repo
+    attr_reader :error_msg
+
+    def initialize(success:, empty_repo:, error_msg:)
+      @success = success
+      @empty_repo = empty_repo
+      @error_msg = error_msg
+    end
+  end
+
+  class Repo
+    def self.remote(organization)
+      client.list_repositories(organization)
+    end
+
+    def self.sync_all(repos)
+      ret = Parallel.map(repos) do |repo|
+        repo.sync
+      end
+
+      ret
+    end
+
+    # octokit info
+    attr_reader :repo
+
+    def initialize(info)
+      @repo = info
+    end
+
+    def sync
+      # remove the "yast-" prefix, make searching in the directory easier
+      dir = repo.name(/^yast-/, "")
+
+      # clone or update the existing checkout
+      if File.exist?(dir)
+        puts "Updating #{dir}..."
+
+        # make sure any unsubmitted work is not lost by accident, stash the changes
+        run_in(dir, "git stash save")
+
+        run_in(dir, "git reset --hard")
+        run_in(dir, "git checkout -q #{TARGET_BRANCH}")
+        # clenup - remove the branches which were deleted on the server
+        run_in(dir, "git fetch --prune")
+        run_in(dir, "git pull --rebase")
+        # do extra git cleanup - might save a lot of space, on the other hand it might
+        # definitely delete some "lost" work, use with caution!
+        # run_in(dir, "git gc")
+      else
+        puts "Cloning #{dir}..."
+        run_in(Dir.pwd, "git clone -b #{TARGET_BRANCH} #{repo.git_url} #{dir}")
+      end
+
+    end
+  end
+end
+
