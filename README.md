@@ -1,10 +1,9 @@
 Scripts
 =======
 
-Here are some my usefull scripts.
-
+Here are some my useful scripts.
 
 Index
-=====
+-----
 
 - [git](git) - Yast Git related scripts
