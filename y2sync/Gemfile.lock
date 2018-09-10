@@ -10,6 +10,7 @@ GEM
       sawyer (~> 0.8.0, >= 0.5.3)
     parallel (1.12.1)
     public_suffix (3.0.3)
+    ruby-progressbar (1.10.0)
     sawyer (0.8.1)
       addressable (>= 2.3.5, < 2.6)
       faraday (~> 0.8, < 1.0)
@@ -20,6 +21,7 @@ PLATFORMS
 DEPENDENCIES
   octokit
   parallel
+  ruby-progressbar
 
 BUNDLED WITH
    1.16.1

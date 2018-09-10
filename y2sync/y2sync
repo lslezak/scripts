@@ -1,7 +1,17 @@
 #!/usr/bin/env ruby
 
-require "parallel"
+# install missing gems
+if !File.exist?(".vendor")
+  puts "Installing the needed Rubygems to .vendor/bundle ..."
+  system "bundle install --path .vendor/bundle"
+end
+
+require "rubygems"
+require "bundler/setup"
+
 require "octokit"
+require "parallel"
+require "ruby-progressbar"
 require "yaml"
 
 client = Octokit::Client.new
