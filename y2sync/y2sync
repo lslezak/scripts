@@ -14,14 +14,15 @@ require "parallel"
 require "ruby-progressbar"
 require "yaml"
 
-client = Octokit::Client.new()
+client = Octokit::Client.new
 client.auto_paginate = true
 
 module Y2sync
   # FIXME: more branches
-  IGNORED_REPOS_SLE12 = []
+  IGNORED_REPOS_SLE12 = [].freeze
   IGNORED_REPOS_SLE15 = IGNORED_REPOS_SLE12.concat([])
-  IGNORED_REPOS_MASTER = IGNORED_REPOS_SLE15.concat([
+  IGNORED_REPOS_MASTER = IGNORED_REPOS_SLE15.concat(
+    [
       "skelcd-control-SLES-for-VMware",
       "rubygem-scc_api",
       "yast-autofs",
@@ -89,24 +90,21 @@ module Y2sync
       "yast-y2r-tools",
       "ycp-killer",
       "y2r",
-      "travis_old",
+      "travis_old"
     ]
   )
- 
-  class Config
 
-    FILE_NAME = ".y2sync.yml"
+  class Config
+    FILE_NAME = ".y2sync.yml".freeze
 
     attr_reader :branch
 
     attr_reader :empty_repos
 
-    def self.read(file = FILE_NAME)
-
+    def self.read(_file = FILE_NAME)
     end
 
     def write(file = FILE_NAME)
-
     end
   end
 
@@ -128,9 +126,7 @@ module Y2sync
     end
 
     def self.sync_all(repos)
-      ret = Parallel.map(repos) do |repo|
-        repo.sync
-      end
+      ret = Parallel.map(repos, &:sync)
 
       ret
     end
@@ -165,8 +161,6 @@ module Y2sync
         puts "Cloning #{dir}..."
         run_in(Dir.pwd, "git clone -b #{TARGET_BRANCH} #{repo.git_url} #{dir}")
       end
-
     end
   end
 end
-
