@@ -1,0 +1,8 @@
+# use the shared Yast defaults
+inherit_from:
+  https://raw.githubusercontent.com/yast/yast-devtools/master/ytools/y2tool/rubocop_yast_style.yml
+
+AllCops:
+  Excludes:
+    - "**/vendor/**/*.rb"
+    - "**/.vendor/**/*.rb"

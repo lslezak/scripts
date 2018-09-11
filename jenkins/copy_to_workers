@@ -1,0 +1,27 @@
+#! /bin/sh
+
+FILE="$1"
+TARGET="$2"
+
+# uncomment this for the very first run to copy your
+# public SSH keys to the internal workers:
+#
+# ssh-copy-id root@yast-ci-worker.suse.de
+# ssh-copy-id root@yast-ci-worker-2.suse.de
+# ssh-copy-id root@yast-ci-worker-3.suse.de
+# ssh-copy-id root@vm-yast-ci-worker.suse.cz
+# ssh-copy-id root@vm-yast-ci-worker2.suse.cz
+#
+# for the external one ask a maintaner to add your key
+
+set -x
+
+# the internal workers
+scp "$FILE" "root@yast-ci-worker.suse.de:$TARGET"
+scp "$FILE" "root@yast-ci-worker-2.suse.de:$TARGET"
+scp "$FILE" "root@yast-ci-worker-3.suse.de:$TARGET"
+scp "$FILE" "root@vm-yast-ci-worker.suse.cz:$TARGET"
+scp "$FILE" "root@vm-yast-ci-worker2.suse.cz:$TARGET"
+
+# the external worker
+scp -P 22031 "$FILE" "root@ci1-opensuse.suse.de:$TARGET"

@@ -14,7 +14,7 @@ require "parallel"
 require "ruby-progressbar"
 require "yaml"
 
-client = Octokit::Client.new
+client = Octokit::Client.new()
 client.auto_paginate = true
 
 module Y2sync
