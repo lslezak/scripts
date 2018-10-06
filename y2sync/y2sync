@@ -101,7 +101,14 @@ module Y2sync
 
     attr_reader :empty_repos
 
-    def self.read(_file = FILE_NAME)
+    def self.read(file = FILE_NAME)
+      dir = Dir.pwd
+      path = File.join(dir, file)
+
+      while(!File.exist?(path) && dir != "/")
+        dir = Pathname.new(dir).parent.to_s
+        path = File.join(dir, file)
+      end
     end
 
     def write(file = FILE_NAME)
