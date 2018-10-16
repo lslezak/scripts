@@ -12,7 +12,7 @@ require "bundler/setup"
 require "octokit"
 
 # a token with admin permissions is required
-client = Octokit::Client.new(:access_token => '<your access token>')
+client = Octokit::Client.new(access_token: "<your access token>")
 client.auto_paginate = true
 
 # the name of the organization
@@ -26,9 +26,9 @@ puts "Found repositories:"
 puts repos.map(&:name).inspect
 
 teams = client.organization_teams(org_name)
-the_team = teams.find{|t| t.name == team_name}
+the_team = teams.find { |t| t.name == team_name }
 
 repos.each do |r|
   puts "Adding repo #{r.name}..."
-  client.add_team_repository(the_team.id, r.full_name, permission: 'pull')
+  client.add_team_repository(the_team.id, r.full_name, permission: "pull")
 end
