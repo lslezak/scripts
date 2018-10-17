@@ -9,7 +9,8 @@ require "kramdown"
 # parse date
 require "date"
 
-class LizardHtmlImporter
+# lizards.o.o HTML importer
+class LizardsHtmlImporter
   attr_reader :html_file
 
   def initialize(html_file)
@@ -21,7 +22,7 @@ class LizardHtmlImporter
     "Highlights of YaST development sprint 21",
     "Highlights of YaST development sprint 22",
     "Highlights of YaST development sprint 23"
-  ]
+  ].freeze
 
   # Process the import.
   def process
@@ -39,7 +40,7 @@ class LizardHtmlImporter
   def import_post(post)
     puts "Importing post \"#{post_title(post)}\"..."
     content = post.xpath("div[@class=\"entry\"]").first
-    formatted_date = post_date(post).strftime('%Y-%m-%d')
+    formatted_date = post_date(post).strftime("%Y-%m-%d")
 
     # download images from lizards.opensuse.org and replace the URLs
     download_and_replace_images(content, "images/#{formatted_date}")
@@ -53,21 +54,31 @@ class LizardHtmlImporter
     replace_emoji(html)
 
     # convert to Markdown
-    md_content = Kramdown::Document.new(html, :html_to_native => true).to_kramdown
+    md_content = Kramdown::Document.new(html, html_to_native: true).to_kramdown
 
     file_path = "_posts/#{formatted_date}-#{post_file_name(post)}.md"
     # add the YAML header
     File.write(file_path, yaml_header(post) + "---\n\n" + md_content)
   end
 
+  def self.emoji(img, code)
+    "<img src=\"https://s.w.org/images/core/emoji/72x72/#{img}.png\" " \
+    "alt=\"&#x#{code};\" class=\"wp-smiley\" style=\"height: 1em; max-height: 1em;\" />"
+  end
+
+  def self.emoji2(img, code)
+    "<img src=\"https://s.w.org/images/core/emoji/2/72x72/#{img}.png\" " \
+    "alt=\"&#x#{code};\" class=\"wp-smiley\" style=\"height: 1em; max-height: 1em;\" />"
+  end
+
   # simple&stupid emoji replacement, we used just few emoticons
   # do not overengeneer
   EMOJI = {
-    '<img src="https://s.w.org/images/core/emoji/72x72/1f609.png" alt="&#x1f609;" class="wp-smiley" style="height: 1em; max-height: 1em;" />' => ":wink:",
-    '<img src="https://s.w.org/images/core/emoji/2/72x72/1f609.png" alt="&#x1f609;" class="wp-smiley" style="height: 1em; max-height: 1em;" />' => ":wink:",
-    '<img src="https://s.w.org/images/core/emoji/72x72/1f642.png" alt="&#x1f609;" class="wp-smiley" style="height: 1em; max-height: 1em;" />' => ":simple_smile:",
-    '<img src="https://s.w.org/images/core/emoji/2/72x72/1f642.png" alt="&#x1f642;" class="wp-smiley" style="height: 1em; max-height: 1em;" />' => ":simple_smile:"
-  }
+    emoji("1f609", "1f609")  => ":wink:",
+    emoji("1f642", "1f642")  => ":simple_smile:",
+    emoji2("1f609", "1f609") => ":wink:",
+    emoji2("1f642", "1f642") => ":simple_smile:"
+  }.freeze
 
   def replace_emoji(post)
     EMOJI.each do |link, emoji|
@@ -85,7 +96,8 @@ class LizardHtmlImporter
   # replace images by a local copy, download images if not already present
   def download_and_replace_tag(tree, download_dir, tag, attribute)
     # replace only URLs pointing to an uploaded content
-    tree.xpath(".//#{tag}[contains(@#{attribute},\"//lizards.opensuse.org/wp-content/uploads\")]").each do |node|
+    tree.xpath(".//#{tag}[contains(@#{attribute},\"//lizards.opensuse.org/wp-content/uploads\")]")
+        .each do |node|
       src = node.attribute(attribute).value
       # add HTTPS if there is no protocol
       src = "https:#{src}" if src.start_with?("//")
@@ -118,13 +130,13 @@ class LizardHtmlImporter
   def yaml_header(item)
     header = {
       # Note: 'description' is not present in HTML
-      'layout' => 'post',
-      'date' => post_date(item),
-      'title' => post_title(item),
+      "layout"   => "post",
+      "date"     => post_date(item),
+      "title"    => post_title(item),
       # Note: the categories and tags must be fixed manually
       # both are mixed into a single list
-      'category' => post_tags(item),
-      'tags' => post_tags(item)
+      "category" => post_tags(item),
+      "tags"     => post_tags(item)
     }
 
     header.to_yaml
@@ -133,10 +145,10 @@ class LizardHtmlImporter
   # post file name
   def post_file_name(post)
     name = post_title(post).split(%r{ |!|’|/|:|&|-|$|,|\(|\)}).map do |i|
-      i.downcase if i != ''
+      i.downcase if i != ""
     end
 
-    name.compact.join('-')
+    name.compact.join("-")
   end
 
   # get the date from the post permalink
