@@ -22,5 +22,3 @@ repos.each do |repo|
 
   puts
 end
-
-

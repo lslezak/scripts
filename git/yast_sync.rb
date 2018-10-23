@@ -5,7 +5,7 @@ require "shellwords"
 
 # which branch to check out
 # TODO: add branch fallbacks, e.g. if Code-11-SP4 does not exist try Code-11-SP3
-TARGET_BRANCH = "master"
+TARGET_BRANCH = "master".freeze
 
 # retry counts after failure
 MAX_ATTEMPS = 5
@@ -17,7 +17,6 @@ class Threading
   @@threads_count = nil
 
   class << self
-
     # Run a task in parallel for processing list of items.
     #
     # The passed block is used for processing each list item.
@@ -32,7 +31,7 @@ class Threading
     #     puts "Slept #{arg} seconds"
     #   end
     #
-    def in_parallel args
+    def in_parallel(args)
       tasks = split_array args, threads_count
 
       # the currently running threads
@@ -45,10 +44,10 @@ class Threading
       end
 
       # wait for all threads to finish
-      running_threads.each { |t| t.join }
+      running_threads.each(&:join)
     end
 
-    def threads_count= num
+    def threads_count=(num)
       @@threads_count = num
     end
 
@@ -56,7 +55,7 @@ class Threading
       @@threads_count ||= cpu_count
     end
 
-    private
+  private
 
     # autodetect the number of CPUs in the system
     def cpu_count
@@ -65,7 +64,7 @@ class Threading
 
     # split an array to (possibly) equal parts
     def split_array(arr, parts)
-      ret = [];
+      ret = []
       arr.each_slice((arr.size / parts.to_f).ceil) { |part| ret << part } unless arr.empty?
       ret
     end
@@ -73,8 +72,8 @@ class Threading
 end
 
 def read_yast_repos
-  JSON.parse(`curl --netrc -s 'https://api.github.com/orgs/yast/repos?page=1&per_page=100'`).map{|r| r["name"]}.concat(
-    JSON.parse(`curl --netrc -s 'https://api.github.com/orgs/yast/repos?page=2&per_page=100'`).map{|r| r["name"]}
+  JSON.parse(`curl --netrc -s 'https://api.github.com/orgs/yast/repos?page=1&per_page=100'`).map { |r| r["name"] }.concat(
+    JSON.parse(`curl --netrc -s 'https://api.github.com/orgs/yast/repos?page=2&per_page=100'`).map { |r| r["name"] }
   )
 end
 
@@ -84,7 +83,7 @@ def run_in(dir, cmd)
   loop do
     `(cd #{Shellwords.escape(dir)} && #{cmd})`
 
-    break if $?.success?
+    break if $CHILD_STATUS.success?
 
     if attempt > MAX_ATTEMPS
       $stderr.puts "Command #{cmd.inspect} still fails, giving up"
@@ -92,7 +91,7 @@ def run_in(dir, cmd)
     end
 
     attempt += 1
-    $stderr.puts "Error: #{$?.exitstatus}, retrying in #{RETRY_TIMEOUT} seconds..."
+    $stderr.puts "Error: #{$CHILD_STATUS.exitstatus}, retrying in #{RETRY_TIMEOUT} seconds..."
     sleep(RETRY_TIMEOUT)
   end
 end
@@ -168,10 +167,10 @@ IGNORED_REPOS = [
   "yast-y2r-tools",
   "ycp-killer",
   "y2r",
-  "travis_old",
-]
+  "travis_old"
+].freeze
 
-repos = repos - IGNORED_REPOS
+repos -= IGNORED_REPOS
 puts "Ignoring #{IGNORED_REPOS.size} obsoleted repositories, using #{repos.size} repositories"
 
 repos.sort!
@@ -209,7 +208,5 @@ Threading.in_parallel(repos) do |repo|
   # run_in(dir, "cmd")
 end
 
-obsolete = Dir["*"] & IGNORED_REPOS.map{|r| r.sub(/^yast-/, "")}
-if !obsolete.empty?
-  puts "Found obsolete directories: #{obsolete}"
-end
+obsolete = Dir["*"] & IGNORED_REPOS.map { |r| r.sub(/^yast-/, "") }
+puts "Found obsolete directories: #{obsolete}" if !obsolete.empty?

@@ -52,11 +52,11 @@ uri.password = ask_password
 resp = get_url(uri)
 
 case resp
-  when Net::HTTPOK
-    fn = Time.now().strftime("%F-%H-%M-%S.csv")
-    File.write(fn, resp.body)
-  when Net::HTTPUnauthorized
-    $stderr.puts "Invalid Bugzilla credentials"
-  else
-    raise "Bugzilla query failed"
+when Net::HTTPOK
+  fn = Time.now.strftime("%F-%H-%M-%S.csv")
+  File.write(fn, resp.body)
+when Net::HTTPUnauthorized
+  $stderr.puts "Invalid Bugzilla credentials"
+else
+  raise "Bugzilla query failed"
 end

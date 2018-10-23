@@ -5,21 +5,21 @@
 #
 # Usage:
 #   ./install_overcommit.rb [path]
-# 
+#
 # If path is given it scans that directory, if not specified it scans
 # the current directory.
-# 
+#
 # See https://github.com/brigade/overcommit for more details about
 # the Overcommit tool.
 
 # Overcommit configuration
-OVERCOMMIT_CFG = ".overcommit.yml"
+OVERCOMMIT_CFG = ".overcommit.yml".freeze
 
 def install_overcommit(dir)
   # skip if overcommit is already present
   overcommit_file = File.join(dir, OVERCOMMIT_CFG)
   return if File.exist?(overcommit_file)
-  
+
   rubocop_enabled = File.exist?(File.join(dir, ".rubocop.yml"))
   test_command = if File.exist?(File.join(dir, "Makefile.cvs"))
     ["make", "check"]
@@ -62,7 +62,7 @@ PreCommit:
       - SLE-12-*
 
   RuboCop:
-    enabled: #{rubocop_enabled.to_s}
+    enabled: #{rubocop_enabled}
     # treat all warnings as failures
     on_warn: fail
 
@@ -83,13 +83,13 @@ EOS
     system "overcommit --install"
     system "overcommit --sign"
   end
-  
+
   puts
 end
 
 # traverse the directory using the Find module
 # see http://ruby-doc.org/stdlib-2.1.3/libdoc/find/rdoc/Find.html
-require 'find'
+require "find"
 start = ARGV[0] || "."
 
 Find.find(start) do |path|

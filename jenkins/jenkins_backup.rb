@@ -16,7 +16,7 @@ require "bundler/setup"
 
 require "jenkins_api_client"
 
-JENKINS_URL = "https://ci.opensuse.org"
+JENKINS_URL = "https://ci.opensuse.org".freeze
 
 puts "Reading YaST Jenkins jobs at #{JENKINS_URL}..."
 jenkins = JenkinsApi::Client.new(server_url: JENKINS_URL,

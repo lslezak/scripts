@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 # This script restores a job config at Jenkins.
-# 
+#
 # Usage: jenkins_restore.rb <job_name> <config.xml>
 #
 # Pass the Jenkins credentials via "JENKINS_USER" and "JENKINS_PASSWORD"
@@ -18,7 +18,7 @@ require "bundler/setup"
 
 require "jenkins_api_client"
 
-JENKINS_URL = "https://ci.opensuse.org"
+JENKINS_URL = "https://ci.opensuse.org".freeze
 
 jenkins = JenkinsApi::Client.new(server_url: JENKINS_URL,
   username: ENV["JENKINS_USER"], password: ENV["JENKINS_PASSWORD"])
