@@ -94,24 +94,47 @@ module Y2sync
     ]
   )
 
+  class Options
+    def self.parse
+      # use "optparse" later, so far we do not need anything fancy
+      {
+        command: ARGV.shift
+      }
+    end
+  end
+
   class Config
     FILE_NAME = ".y2sync.yml".freeze
 
-    attr_reader :branch
+    attr_reader :branch, :empty_repos, :file
 
-    attr_reader :empty_repos
+    def initialize(file: nil, branch: "master", empty_repos: [])
+    end
 
     def self.read(file = FILE_NAME)
       dir = Dir.pwd
       path = File.join(dir, file)
 
-      while(!File.exist?(path) && dir != "/")
+      while !File.exist?(path) && dir != "/"
         dir = Pathname.new(dir).parent.to_s
         path = File.join(dir, file)
       end
+
+      if File.exist?(path)
+        cfg = YAML.load_file(path)
+        config = Config.new(file: path, branch: cfg["branch"], empty_repos: cfg["empty_repos"])
+        return config
+      end
+
+      raise "Not in an YaST checkout"
     end
 
     def write(file = FILE_NAME)
+      cfg = {
+        "branch"      => branch,
+        "empty_repos" => empty_repos
+      }
+      File.write(file, cfg)
     end
   end
 
