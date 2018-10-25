@@ -13,6 +13,8 @@ require "octokit"
 require "parallel"
 require "ruby-progressbar"
 require "yaml"
+require "singleton"
+require "optparse"
 
 client = Octokit::Client.new
 client.auto_paginate = true
@@ -20,8 +22,8 @@ client.auto_paginate = true
 module Y2sync
   # FIXME: more branches
   IGNORED_REPOS_SLE12 = [].freeze
-  IGNORED_REPOS_SLE15 = IGNORED_REPOS_SLE12.concat([])
-  IGNORED_REPOS_MASTER = IGNORED_REPOS_SLE15.concat(
+  IGNORED_REPOS_SLE15 = IGNORED_REPOS_SLE12
+  IGNORED_REPOS_MASTER = IGNORED_REPOS_SLE15 + 
     [
       "skelcd-control-SLES-for-VMware",
       "rubygem-scc_api",
@@ -92,26 +94,36 @@ module Y2sync
       "y2r",
       "travis_old"
     ]
-  )
 
   class Options
-    attr_reader :verbose, :branch, :command
+    include Singleton
+
+    attr_reader :verbose, :branch, :command, :require
+    attr_writer :command
 
     def initialize
       OptionParser.new do |opts|
-        opts.banner = "Usage: example.rb [options] [command]"
+        opts.banner = "Usage: #{$PROGRAM_NAME} [options] [command]"
       
         opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
           self.verbose = v
+        end
+
+        opts.on("-r", "--require", "Require a file") do |r|
+          self.require = r
+        end
+
+        opts.on("-b", "--branch", "Branch to checkout (default \"master\")") do |b|
+          self.branch = b
         end
       end.parse!
 
       self.command = ARGV.shift
     end
 
-    private
+  private
 
-      attr_writer :verbose, :branch, :command
+    attr_writer :verbose, :branch, :require
   end
 
   class Config
@@ -137,7 +149,7 @@ module Y2sync
         return config
       end
 
-      raise "Not in an YaST checkout"
+      Config.new
     end
 
     def write(file = FILE_NAME)
@@ -205,3 +217,20 @@ module Y2sync
     end
   end
 end
+
+def main
+  options = Y2sync::Options.instance
+  puts "options: #{options.inspect}"
+
+  config = Y2sync::Config.read
+  puts "config: #{config.inspect}"
+
+  if options.command.nil?
+    options.command = config.file.nil? ? "clone" : "update"
+  end
+
+  puts "options: #{options.inspect}"
+end
+
+main
+
