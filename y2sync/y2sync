@@ -95,12 +95,23 @@ module Y2sync
   )
 
   class Options
-    def self.parse
-      # use "optparse" later, so far we do not need anything fancy
-      {
-        command: ARGV.shift
-      }
+    attr_reader :verbose, :branch, :command
+
+    def initialize
+      OptionParser.new do |opts|
+        opts.banner = "Usage: example.rb [options] [command]"
+      
+        opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
+          self.verbose = v
+        end
+      end.parse!
+
+      self.command = ARGV.shift
     end
+
+    private
+
+      attr_writer :verbose, :branch, :command
   end
 
   class Config
