@@ -15,6 +15,7 @@ require "ruby-progressbar"
 require "yaml"
 require "singleton"
 require "optparse"
+require "shellwords"
 
 client = Octokit::Client.new
 client.auto_paginate = true
@@ -119,6 +120,7 @@ module Y2sync
       end.parse!
 
       self.command = ARGV.shift
+      self.branch = "master" unless branch
     end
 
   private
@@ -132,6 +134,9 @@ module Y2sync
     attr_reader :branch, :empty_repos, :file
 
     def initialize(file: nil, branch: "master", empty_repos: [])
+      @file = file
+      @branch = branch
+      @empty_repos = empty_repos
     end
 
     def self.read(file = FILE_NAME)
@@ -152,12 +157,13 @@ module Y2sync
       Config.new
     end
 
-    def write(file = FILE_NAME)
+    def write
       cfg = {
         "branch"      => branch,
         "empty_repos" => empty_repos
       }
-      File.write(file, cfg)
+      puts "Writing #{file || FILE_NAME}"
+      File.write(file || FILE_NAME, cfg.to_yaml)
     end
   end
 
@@ -191,29 +197,49 @@ module Y2sync
       @repo = info
     end
 
-    def sync
+    def dir
       # remove the "yast-" prefix, make searching in the directory easier
-      dir = repo.name(/^yast-/, "")
+      repo.name(/^yast-/, "")
+    end
 
+    def clone_repo
+      cmd = "git clone -b #{Shellwords.escape(TARGET_BRANCH)} " \
+        "#{Shellwords.escape(repo.git_url)} #{Shellwords.escape(dir)}"
+
+      `#{cmd}`
+
+      # FIXME: collect errors?
+      SyncResult.new(success: $?.success?, empty_repo: files(dir).empty?)
+    end
+
+    def update_repo
+      # make sure any unsubmitted work is not lost by accident, stash the changes
+      run_in(dir, "git stash save")
+
+      run_in(dir, "git reset --hard")
+      run_in(dir, "git checkout -q #{TARGET_BRANCH}")
+      # clenup - remove the branches which were deleted on the server
+      run_in(dir, "git fetch --prune")
+      run_in(dir, "git pull --rebase")
+      # do extra git cleanup - might save a lot of space, on the other hand it might
+      # definitely delete some "lost" work, use with caution!
+      # run_in(dir, "git gc")
+    end
+
+    def sync
       # clone or update the existing checkout
       if File.exist?(dir)
-        puts "Updating #{dir}..."
-
-        # make sure any unsubmitted work is not lost by accident, stash the changes
-        run_in(dir, "git stash save")
-
-        run_in(dir, "git reset --hard")
-        run_in(dir, "git checkout -q #{TARGET_BRANCH}")
-        # clenup - remove the branches which were deleted on the server
-        run_in(dir, "git fetch --prune")
-        run_in(dir, "git pull --rebase")
-        # do extra git cleanup - might save a lot of space, on the other hand it might
-        # definitely delete some "lost" work, use with caution!
-        # run_in(dir, "git gc")
+        update_repo
       else
-        puts "Cloning #{dir}..."
-        run_in(Dir.pwd, "git clone -b #{TARGET_BRANCH} #{repo.git_url} #{dir}")
+        clone_repo
       end
+    end
+
+  private
+
+    def files(dir)
+      # remove the self and parent directory entries
+      Dir.entries(dir) - [".", ".."]
     end
   end
 end
@@ -226,10 +252,20 @@ def main
   puts "config: #{config.inspect}"
 
   if options.command.nil?
-    options.command = config.file.nil? ? "clone" : "update"
+    options.command = config.file.nil? ? "clone" : "refresh"
   end
 
+  case  options.command
+  when "clone"
+    puts "Cloning all repositories..."
+    config.write
+  when "refresh"
+    puts "Refreshing the current repositories..."
+  when "update"
+    puts "Updating the current checkout..."
+  end
   puts "options: #{options.inspect}"
+
 end
 
 main
