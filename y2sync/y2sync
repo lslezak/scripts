@@ -17,15 +17,22 @@ require "singleton"
 require "optparse"
 require "shellwords"
 
-client = Octokit::Client.new
-client.auto_paginate = true
 
 module Y2sync
   # FIXME: more branches
-  IGNORED_REPOS_SLE12 = [].freeze
-  IGNORED_REPOS_SLE15 = IGNORED_REPOS_SLE12
-  IGNORED_REPOS_MASTER = IGNORED_REPOS_SLE15 + 
-    [
+  IGNORED_REPOS = {
+    # FIXME
+    "SLE-12-GA" => [],
+    "SLE-12-SP1" => [],
+    "SLE-12-SP2" => [],
+    "SLE-12-SP3" => [],
+    "SLE-12-SP4" => [],
+    "SLE-15-GA" => [],
+    "SLE-15-SP1" => [],
+    "SLE-15-SP2" => [],
+    "SLE-15-SP3" => [],
+    "SLE-15-SP4" => [],
+    "master" => [
       "skelcd-control-SLES-for-VMware",
       "rubygem-scc_api",
       "yast-autofs",
@@ -95,6 +102,7 @@ module Y2sync
       "y2r",
       "travis_old"
     ]
+  }
 
   class Options
     include Singleton
@@ -180,14 +188,20 @@ module Y2sync
   end
 
   class Repo
-    def self.remote(organization)
-      client.list_repositories(organization)
+    def self.all
+      client = Octokit::Client.new
+      client.auto_paginate = true
+
+      # TODO add option for other organizations
+      client.list_repositories("yast").map(&:name).sort
+    end
+
+    def self.branch(branch)
+      all.reject{ |r| IGNORED_REPOS[branch].include?(r.name)}
     end
 
     def self.sync_all(repos)
-      ret = Parallel.map(repos, &:sync)
-
-      ret
+      Parallel.map(repos, progress: "Progress") { |r| r.sync }
     end
 
     # octokit info
@@ -213,17 +227,18 @@ module Y2sync
     end
 
     def update_repo
-      # make sure any unsubmitted work is not lost by accident, stash the changes
-      run_in(dir, "git stash save")
-
-      run_in(dir, "git reset --hard")
-      run_in(dir, "git checkout -q #{TARGET_BRANCH}")
-      # clenup - remove the branches which were deleted on the server
-      run_in(dir, "git fetch --prune")
-      run_in(dir, "git pull --rebase")
-      # do extra git cleanup - might save a lot of space, on the other hand it might
-      # definitely delete some "lost" work, use with caution!
-      # run_in(dir, "git gc")
+      Dir.cwd(dir) do
+        # make sure any unsubmitted work is not lost by accident, stash the changes
+        `git stash save`
+        `git reset --hard`
+        # cleanup - remove the branches which were deleted on the server
+        `git fetch --prune`
+        `git checkout -q #{TARGET_BRANCH}`
+        `git pull --rebase`
+        # do extra git cleanup - might save a lot of space, on the other hand it might
+        # definitely delete some "lost" work, use with caution!
+        # `git gc`
+      end
     end
 
     def sync
@@ -258,7 +273,8 @@ def main
   case  options.command
   when "clone"
     puts "Cloning all repositories..."
-    config.write
+    puts Y2sync::Repo.all.inspect
+    #config.write
   when "refresh"
     puts "Refreshing the current repositories..."
   when "update"
