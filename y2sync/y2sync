@@ -223,21 +223,22 @@ module Y2sync
       `#{cmd}`
 
       # FIXME: collect errors?
-      SyncResult.new(success: $?.success?, empty_repo: files(dir).empty?)
+      SyncResult.new(success: $?.success?, empty_repo: live?)
     end
 
     def update_repo
       Dir.cwd(dir) do
-        # make sure any unsubmitted work is not lost by accident, stash the changes
-        `git stash save`
-        `git reset --hard`
-        # cleanup - remove the branches which were deleted on the server
-        `git fetch --prune`
-        `git checkout -q #{TARGET_BRANCH}`
-        `git pull --rebase`
-        # do extra git cleanup - might save a lot of space, on the other hand it might
-        # definitely delete some "lost" work, use with caution!
-        # `git gc`
+        # stash - make sure any unsubmitted work is not lost by accident
+        # reset - ensure consistent state
+        # prune - remove the branches which were deleted on the server
+        # checkout - ensure the requested branch is set
+        # pull - update from origin with rebase
+        # TODO: optionally gc
+        cmd = "git stash save && git reset --hard && git fetch --prune && " \
+          "git checkout -q #{Shellwords.escape(TARGET_BRANCH)} && git pull --rebase"
+        `#{cmd}`
+
+        return SyncResult.new(success: $?.success?, empty_repo: live?)
       end
     end
 
@@ -252,9 +253,14 @@ module Y2sync
 
   private
 
-    def files(dir)
+    def files
       # remove the self and parent directory entries
       Dir.entries(dir) - [".", ".."]
+    end
+
+    # the dead repositories only contain README.md file
+    def live?
+      files.size > 1
     end
   end
 end
