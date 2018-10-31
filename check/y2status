@@ -16,28 +16,30 @@ require "rainbow"
 require "shellwords"
 require "singleton"
 
-
 class Options
   include Singleton
 
-  attr_reader :verbose, :show_success, :color, :urls
+  attr_reader :verbose, :show_success, :color, :urls, :public_only
 
   def initialize
     @only_errors = true
-    @urls = true
 
     OptionParser.new do |opts|
       opts.banner = "Usage: #{$PROGRAM_NAME} [options]"
-    
+
       opts.on("-c", "--[no-]color", "Colorize the output (default: auto, enabled on TTY)") do |c|
         Rainbow.enabled = c
+      end
+
+      opts.on("-p", "--public", "Query only the public services (default: false)") do |p|
+        @public_only = p
       end
 
       opts.on("-s", "--success", "Show also the successful results (default: false, only errors)") do |s|
         @show_success = s
       end
 
-      opts.on("-u", "--[no-]url", "Display URL links with details (default: true)") do |u|
+      opts.on("-u", "--[no-]urls", "Display URL links with details (default: false)") do |u|
         @urls = u
       end
 
@@ -49,14 +51,31 @@ class Options
   end
 end
 
+def print_verbose(msg)
+  puts Rainbow(msg).magenta if Options.instance.verbose
+end
+
+def print_error(msg)
+  puts Rainbow(msg).red
+end
+
 def download(url)
-  puts "Downloading #{url}..." if Options.instance.verbose
+  print_verbose("Downloading #{url}...")
   # -s silent, -L follow redirects
   `curl -sL #{Shellwords.escape(url)}`
 end
 
-def jenkins_status(url)
-  status = JSON.parse(download(url))
+def jenkins_status(base_url)
+  url = base_url + "/api/json?pretty=true"
+  body = download(url)
+
+  if body.empty?
+    print_error("ERROR: Cannot download #{url}")
+    return false
+  end
+
+  success = true
+  status = JSON.parse(body)
 
   status["jobs"].each do |s|
     next unless s["color"] == "red" || Options.instance.show_success
@@ -64,7 +83,9 @@ def jenkins_status(url)
 
     puts case s["color"]
     when "red"
-      Rainbow("failed").red
+      success = false
+      link = Options.instance.urls ? Rainbow(" (#{base_url}/job/#{s["name"]}/lastBuild/console)").cyan : ""
+      Rainbow("failed").red + link
     when "blue"
       Rainbow("success").green
     when "disabled"
@@ -73,6 +94,8 @@ def jenkins_status(url)
       Rainbow(s["color"]).magenta
     end
   end
+
+  success
 end
 
 
@@ -85,7 +108,7 @@ end
 # @return [CSV::Table] the parsed table
 #
 def get_obs_status(project, api=nil)
-  puts "Running osc prjresults #{project}" if Options.instance.verbose
+  print_verbose("Running osc prjresults #{project}...")
 
   str = `osc prjresults --csv #{Shellwords.escape(project)}`
 
@@ -95,6 +118,7 @@ end
 def print_obs_status(project, api=nil)
   table = get_obs_status(project, api)
 
+  success = true
   table.each do |row|
     row.each do |name, value|
       # skip the name pair
@@ -112,23 +136,73 @@ def print_obs_status(project, api=nil)
         puts Rainbow(value).green
       elsif ["failed", "broken", "unresolvable"].include?(value)
         puts Rainbow(value).red
+        success = false
       else
         puts Rainbow(value).yellow
       end
     end
   end
+
+  success
 end
 
-puts
-puts Rainbow("OBS YaST:Head (https://build.opensuse.org/project/monitor/YaST:Head)").bright.yellow
-print_obs_status("YaST:Head")
+def print_result(res)
+  if res
+    puts Rainbow("✔ OK").green
+  else
+    puts Rainbow("✘ Failed").red
+  end
+end
 
-# internal Jenkins status
-puts
-puts Rainbow("Internal Jenkins (https://ci.suse.de)").bright.yellow
-jenkins_status("https://ci.suse.de/view/YaST/api/json?pretty=true")
+def print_header(title, url = nil)
+  puts
+  print title
+  print Rainbow(" (#{url})").cyan if url && Options.instance.urls
+  puts
+end
+
+success = true
+
+# OBS
+print_header("OBS YaST:SLE-12:SP3", "https://build.opensuse.org/project/monitor/YaST:SLE-12:SP3")
+res = print_obs_status("YaST:SLE-12:SP3")
+success &&= res
+
+print_header("OBS YaST:SLE-12:SP4", "https://build.opensuse.org/project/monitor/YaST:SLE-12:SP4")
+res = print_obs_status("YaST:SLE-12:SP4")
+success &&= res
+
+print_header("OBS YaST:SLE-15:GA", "https://build.opensuse.org/project/monitor/YaST:SLE-15:GA")
+res = print_obs_status("YaST:SLE-15:GA")
+success &&= res
+
+print_header("OBS YaST:Head", "https://build.opensuse.org/project/monitor/YaST:Head")
+res = print_obs_status("YaST:Head")
+success &&= res
+
+# TODO: IBS
+if !Options.instance.public_only
+
+end
+
+# TODO: declined SR: `osc request list -s declined YaST:Head`
+
+# TODO: Docker Hub status: ``
+
+if !Options.instance.public_only
+  # internal Jenkins status
+  print_header("Internal Jenkins", "https://ci.suse.de/view/YaST")
+  res = jenkins_status("https://ci.suse.de/view/YaST")
+  success &&= res
+end
 
 # external Jenkins status
+print_header("External Jenkins", "https://ci.opensuse.org/view/Yast")
+res = jenkins_status("https://ci.opensuse.org/view/Yast")
+success &&= res
+
 puts
-puts Rainbow("External Jenkins (https://ci.opensuse.org)").bright.yellow
-jenkins_status("https://ci.opensuse.org/view/Yast/api/json?pretty=true")
+print Rainbow("Overall status: ").bright.yellow
+puts print_result(success)
+
+exit(success ? 0 : 1)
