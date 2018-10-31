@@ -1,0 +1,134 @@
+#!/usr/bin/env ruby
+
+# install missing gems
+if !File.exist?(".vendor")
+  puts "Installing the needed Rubygems to .vendor/bundle ..."
+  system "bundle install --path .vendor/bundle"
+end
+
+require "rubygems"
+require "bundler/setup"
+
+require "csv"
+require "json"
+require "optparse"
+require "rainbow"
+require "shellwords"
+require "singleton"
+
+
+class Options
+  include Singleton
+
+  attr_reader :verbose, :show_success, :color, :urls
+
+  def initialize
+    @only_errors = true
+    @urls = true
+
+    OptionParser.new do |opts|
+      opts.banner = "Usage: #{$PROGRAM_NAME} [options]"
+    
+      opts.on("-c", "--[no-]color", "Colorize the output (default: auto, enabled on TTY)") do |c|
+        Rainbow.enabled = c
+      end
+
+      opts.on("-s", "--success", "Show also the successful results (default: false, only errors)") do |s|
+        @show_success = s
+      end
+
+      opts.on("-u", "--[no-]url", "Display URL links with details (default: true)") do |u|
+        @urls = u
+      end
+
+      opts.on("-v", "--[no-]verbose", "Run verbosely (default: false)") do |v|
+        @verbose = v
+      end
+
+    end.parse!
+  end
+end
+
+def download(url)
+  puts "Downloading #{url}..." if Options.instance.verbose
+  # -s silent, -L follow redirects
+  `curl -sL #{Shellwords.escape(url)}`
+end
+
+def jenkins_status(url)
+  status = JSON.parse(download(url))
+
+  status["jobs"].each do |s|
+    next unless s["color"] == "red" || Options.instance.show_success
+    printf("    %-50s  ", s["name"])
+
+    puts case s["color"]
+    when "red"
+      Rainbow("failed").red
+    when "blue"
+      Rainbow("success").green
+    when "disabled"
+      Rainbow("disabled").cyan
+    else
+      Rainbow(s["color"]).magenta
+    end
+  end
+end
+
+
+#
+# Get the OBS project build state
+#
+# @param [String] project the project name
+# @param [String,nil] api the API URL
+#
+# @return [CSV::Table] the parsed table
+#
+def get_obs_status(project, api=nil)
+  puts "Running osc prjresults #{project}" if Options.instance.verbose
+
+  str = `osc prjresults --csv #{Shellwords.escape(project)}`
+
+  CSV.parse(str, col_sep: ";", headers: true)
+end
+
+def print_obs_status(project, api=nil)
+  table = get_obs_status(project, api)
+
+  table.each do |row|
+    row.each do |name, value|
+      # skip the name pair
+      next if name == "_"
+
+      # never show disabled or excluded builds
+      next if ["disabled", "excluded"].include?(value)
+
+      # display only important values or all if requested
+      next unless ["failed", "broken", "unresolvable"].include?(value) || Options.instance.show_success
+
+      printf("    %-35s  %-30s  ", row["_"], name.sub(/\/[^\/]*$/, ""))
+
+      if value == "succeeded"
+        puts Rainbow(value).green
+      elsif ["failed", "broken", "unresolvable"].include?(value)
+        puts Rainbow(value).red
+      else
+        puts Rainbow(value).yellow
+      end
+    end
+  end
+end
+
+puts
+puts Rainbow("OBS YaST:Head (https://build.opensuse.org/project/monitor/YaST:Head)").bright.yellow
+print_obs_status("YaST:Head")
+
+# internal Jenkins status
+puts
+puts Rainbow("Internal Jenkins (https://ci.suse.de)").bright.yellow
+jenkins_status("https://ci.suse.de/view/YaST/api/json?pretty=true")
+
+# external Jenkins status
+puts
+puts Rainbow("External Jenkins (https://ci.opensuse.org)").bright.yellow
+jenkins_status("https://ci.opensuse.org/view/Yast/api/json?pretty=true")
