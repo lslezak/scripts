@@ -309,7 +309,7 @@ end
 
 def print_init
   return unless Options.instance.html
-  puts <<~HEREDOC
+  puts <<-EOT
     <!DOCTYPE html>
     <html>
     <head>
@@ -365,20 +365,20 @@ def print_init
 
     <h1>YaST Status Overview</h1>
 
-  HEREDOC
+  EOT
 end
 
 def print_end
   return unless Options.instance.html
 
-  puts <<~HEREDOC
+  puts <<-EOT
 
     <footer>
       #{Time.now.strftime("Generated at %c %Z (%z)")}
     </footer>
     </body>
     </html>
-  HEREDOC
+  EOT
 end
 
 ###################################################################################################
