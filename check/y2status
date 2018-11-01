@@ -16,7 +16,7 @@ require "optparse"
 require "rainbow"
 require "shellwords"
 require "singleton"
-require 'timeout'
+require "timeout"
 
 # parse and store the command line options
 class Options
@@ -79,7 +79,6 @@ def print_line(line, success)
   end
 end
 
-
 def download(url)
   print_progress("Downloading #{url}...")
   # -s silent, -L follow redirects
@@ -138,7 +137,7 @@ def get_obs_status(project, api = nil)
   print_progress("Running \"#{cmd}\"...")
 
   begin
-    str = Timeout::timeout(15) { `#{cmd}` }
+    str = Timeout.timeout(15) { `#{cmd}` }
   rescue Timeout::Error
     print_error("ERROR: Command #{cmd} timed out")
     str = ""
@@ -189,12 +188,12 @@ def print_obs_status(project, api = nil)
       link = "#{obs_api_to_web(api)}/#{path}/#{project}/#{package}/#{target}"
 
       msg << if value == "succeeded"
-        message(value, :success, link)
-      elsif ["failed", "broken", "unresolvable"].include?(value)
-        success = false
-        message(value, :error, link)
-      else
-        message(value, :unknown)
+               message(value, :success, link)
+             elsif ["failed", "broken", "unresolvable"].include?(value)
+               success = false
+               message(value, :error, link)
+             else
+               message(value, :unknown)
       end
 
       print_line(msg, !["failed", "broken", "unresolvable"].include?(value))
@@ -208,7 +207,7 @@ def docker_status_url(img)
   "https://hub.docker.com/v2/repositories/#{img}/buildhistory/?page_size=250"
 end
 
-def message(msg, type, url=nil)
+def message(msg, type, url = nil)
   ret = ""
 
   if Options.instance.html
