@@ -350,7 +350,7 @@ def print_init
         window.onload = function() {
           document.getElementById('filter').style.display = "block";
           document.getElementById('show_all').addEventListener('change', (event) => {
-            style = event.target.checked ? "block" : "none";
+            style = event.target.checked ? "none" : "block";
             document.querySelectorAll('.success_line').forEach(e => e.style.display = style);
           });
         };
