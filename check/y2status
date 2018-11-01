@@ -110,7 +110,8 @@ end
 def get_obs_status(project, api=nil)
   print_verbose("Running osc prjresults #{project}...")
 
-  str = `osc prjresults --csv #{Shellwords.escape(project)}`
+  opt = api ? "-A #{Shellwords.escape(api)}" : ""
+  str = `osc #{opt} prjresults --csv #{Shellwords.escape(project)}`
 
   CSV.parse(str, col_sep: ";", headers: true)
 end
@@ -229,9 +230,29 @@ print_header("OBS YaST:Head", "https://build.opensuse.org/project/monitor/YaST:H
 res = print_obs_status("YaST:Head")
 success &&= res
 
-# TODO: IBS
+# IBS
 if !Options.instance.public_only
+  api = "https://api.suse.de"
 
+  print_header("IBS Devel:YaST:CASP:4.0", "https://build.suse.de/project/monitor/Devel:YaST:CASP:4.0")
+  res = print_obs_status("Devel:YaST:CASP:4.0", api)
+  success &&= res
+
+  print_header("IBS Devel:YaST:SLE-12-SP3", "https://build.suse.de/project/monitor/Devel:YaST:SLE-12-SP3")
+  res = print_obs_status("Devel:YaST:SLE-12-SP3", api)
+  success &&= res
+
+  print_header("IBS Devel:YaST:SLE-12-SP4", "https://build.suse.de/project/monitor/Devel:YaST:SLE-12-SP4")
+  res = print_obs_status("Devel:YaST:SLE-12-SP4", api)
+  success &&= res
+
+  print_header("IBS Devel:YaST:SLE-15", "https://build.suse.de/project/monitor/Devel:YaST:SLE-15")
+  res = print_obs_status("Devel:YaST:SLE-15", api)
+  success &&= res
+
+  print_header("IBS Devel:YaST:Head", "https://build.suse.de/project/monitor/Devel:YaST:Head")
+  res = print_obs_status("Devel:YaST:Head", api)
+  success &&= res
 end
 
 # TODO: declined SR: `osc request list -s declined YaST:Head`
