@@ -16,6 +16,7 @@ require "optparse"
 require "rainbow"
 require "shellwords"
 require "singleton"
+require 'timeout'
 
 # parse and store the command line options
 class Options
@@ -54,15 +55,18 @@ class Options
       end
 
     end.parse!
+
+    @show_success = true if html
   end
 end
 
-def print_verbose(msg)
-  puts message(msg, :info) if Options.instance.verbose
+def print_progress(msg)
+  $stderr.puts(msg) if Options.instance.verbose
 end
 
 def print_error(msg)
   puts message(msg, :error)
+  $stderr.puts(msg) if Options.instance.html
 end
 
 def print_line(line, success)
@@ -77,7 +81,7 @@ end
 
 
 def download(url)
-  print_verbose("Downloading #{url}...")
+  print_progress("Downloading #{url}...")
   # -s silent, -L follow redirects
   `curl --connect-timeout 15 --max-time 30 -sL #{Shellwords.escape(url)}`
 end
@@ -128,10 +132,17 @@ end
 # @return [CSV::Table] the parsed table
 #
 def get_obs_status(project, api = nil)
-  print_verbose("Running osc prjresults #{project}...")
-
   opt = api ? "-A #{Shellwords.escape(api)}" : ""
-  str = `osc #{opt} prjresults --csv #{Shellwords.escape(project)}`
+  cmd = "osc #{opt} prjresults --csv #{Shellwords.escape(project)}"
+
+  print_progress("Running \"#{cmd}\"...")
+
+  begin
+    str = Timeout::timeout(15) { `#{cmd}` }
+  rescue Timeout::Error
+    print_error("ERROR: Command #{cmd} timed out")
+    str = ""
+  end
 
   CSV.parse(str, col_sep: ";", headers: true)
 end
@@ -363,7 +374,7 @@ def print_end
   puts <<~HEREDOC
 
     <footer>
-      #{Time.now.strftime("Generated at %c")}
+      #{Time.now.strftime("Generated at %c %Z (%z)")}
     </footer>
     </body>
     </html>
