@@ -321,7 +321,7 @@ def print_init
       h2 a:hover {text-decoration: underline;}
       .badge  {border-radius: 3px; padding: 3px 6px;
         text-decoration: none; color: white;
-        font-weight: bold;
+        font-weight: bold; background-color: lightgrey;
       }
       .badge a {
         text-decoration: none; color: white;
@@ -359,7 +359,7 @@ def print_init
     <body>
 
     <div id="filter">
-      <label><input id="show_all" type="checkbox"/> Display also successful builds</label>
+      <label><input id="show_all" type="checkbox"/> Display also successful results</label>
     </div>
 
     <h1>YaST Status Overview</h1>
