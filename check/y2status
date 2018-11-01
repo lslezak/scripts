@@ -146,6 +146,55 @@ def print_obs_status(project, api=nil)
   success
 end
 
+def docker_status_url(img)
+  "https://hub.docker.com/v2/repositories/#{img}/buildhistory/?page_size=250"
+end
+
+def get_dockerhub_status(img)
+  download(url)
+end
+
+def print_dockerhub_status(img)
+  url = docker_status_url(img)
+  body = download(url)
+
+  if body.empty?
+    print_error("ERROR: Cannot download #{url}")
+    return false
+  end
+
+  success = true
+  status = JSON.parse(body)
+
+  # remove the duplicates, we need just the latest result for each tag
+  results = status["results"]
+  results.uniq!{ |r| r["dockertag_name"]}
+
+  # "status" values:
+  #     -1 = failed
+  #   0..9 = building
+  #     10 = success
+  results.each do |r|
+    next unless r["status"] < 0 || Options.instance.show_success
+    printf("    %-50s  ", r["dockertag_name"])
+
+    puts case r["status"]
+    when -1
+      success = false
+      link = Options.instance.urls ? Rainbow(" (https://hub.docker.com/r/#{img}/builds/#{r["build_code"]}/)").cyan : ""
+      Rainbow("failed").red + link
+    when 10
+      Rainbow("success").green
+    when 0..9
+      Rainbow("building").cyan
+    else
+      Rainbow("unknown").magenta
+    end
+  end
+
+  success
+end
+
 def print_result(res)
   if res
     puts Rainbow("✔ OK").green
@@ -187,7 +236,26 @@ end
 
 # TODO: declined SR: `osc request list -s declined YaST:Head`
 
-# TODO: Docker Hub status: ``
+# Docker Hub status
+img = "yastdevel/ruby"
+print_header("Docker Hub #{img}", "https://hub.docker.com/r/#{img}/")
+res = print_dockerhub_status(img)
+success &&= res
+
+img = "yastdevel/cpp"
+print_header("Docker Hub #{img}", "https://hub.docker.com/r/#{img}/")
+res = print_dockerhub_status(img)
+success &&= res
+
+img = "yastdevel/libstorage-ng"
+print_header("Docker Hub #{img}", "https://hub.docker.com/r/#{img}/")
+res = print_dockerhub_status(img)
+success &&= res
+
+img = "libyui/devel"
+print_header("Docker Hub #{img}", "https://hub.docker.com/r/#{img}/")
+res = print_dockerhub_status(img)
+success &&= res
 
 if !Options.instance.public_only
   # internal Jenkins status
