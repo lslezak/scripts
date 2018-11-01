@@ -161,6 +161,20 @@ def print_obs_header(project, api)
   print_header("#{type} #{project}", "#{obs_api_to_web(api)}/project/monitor/#{project}")
 end
 
+def declined_requests
+  out = `osc request list -s declined YaST:Head`
+  # the requests are separated by empty lines
+  requests = out.split("\n\n")
+
+  ret = {}
+  requests.each do |r|
+    r.match(/\A(\d+).*\n\s*(?:maintenance_incident|submit): (.*?)\n/m)
+    ret[Regexp.last_match[1]] = Regexp.last_match[2].strip
+  end
+
+  ret
+end
+
 def print_obs_status(project, api = nil)
   print_obs_header(project, api)
 
@@ -373,7 +387,7 @@ def print_end
   puts <<-EOT
 
     <footer>
-      #{Time.now.strftime("Generated at %c %Z (%z)")}
+      #{Time.now.strftime("Generated at %c %Z")}
     </footer>
     </body>
     </html>
