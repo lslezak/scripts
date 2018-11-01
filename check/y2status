@@ -9,6 +9,7 @@ end
 require "rubygems"
 require "bundler/setup"
 
+require "cgi"
 require "csv"
 require "json"
 require "optparse"
@@ -20,7 +21,7 @@ require "singleton"
 class Options
   include Singleton
 
-  attr_reader :verbose, :show_success, :color, :urls, :public_only
+  attr_reader :verbose, :show_success, :color, :urls, :public_only, :html
 
   def initialize
     @only_errors = true
@@ -30,6 +31,10 @@ class Options
 
       opts.on("-c", "--[no-]color", "Colorize the output (default: auto, enabled on TTY)") do |c|
         Rainbow.enabled = c
+      end
+
+      opts.on("-w", "--web", "HTML Output (default: false)") do |h|
+        @html = h
       end
 
       opts.on("-p", "--public", "Query only the public services (default: false)") do |p|
@@ -53,17 +58,28 @@ class Options
 end
 
 def print_verbose(msg)
-  puts Rainbow(msg).magenta if Options.instance.verbose
+  puts message(msg, :info) if Options.instance.verbose
 end
 
 def print_error(msg)
-  puts Rainbow(msg).red
+  puts message(msg, :error)
 end
+
+def print_line(line, success)
+  if Options.instance.html
+    print "<pre class=\"#{success ? "success_line" : ""}\">"
+    print line
+    puts "</pre>"
+  else
+    puts line
+  end
+end
+
 
 def download(url)
   print_verbose("Downloading #{url}...")
   # -s silent, -L follow redirects
-  `curl -sL #{Shellwords.escape(url)}`
+  `curl --connect-timeout 15 --max-time 30 -sL #{Shellwords.escape(url)}`
 end
 
 def jenkins_status(title, base_url)
@@ -82,24 +98,22 @@ def jenkins_status(title, base_url)
 
   status["jobs"].each do |s|
     next unless s["color"] == "red" || Options.instance.show_success
-    printf("    %-50s  ", s["name"])
+    link = "#{base_url}/job/#{s["name"]}/lastBuild/console)"
 
-    puts case s["color"]
+    msg = sprintf("    %-50s  ", s["name"])
+    msg << case s["color"]
     when "red"
       success = false
-      link = if Options.instance.urls
-        Rainbow(" (#{base_url}/job/#{s["name"]}/lastBuild/console)").cyan
-      else
-        ""
-      end
-      Rainbow("failed").red + link
+      message("failed", :error, link)
     when "blue"
-      Rainbow("success").green
+      message("success", :success, link)
     when "disabled"
-      Rainbow("disabled").cyan
+      message("disabled", :info, link)
     else
-      Rainbow(s["color"]).magenta
+      message(s["color"], :unknown, link)
     end
+
+    print_line(msg, s["color"] != "red")
   end
 
   success
@@ -157,27 +171,22 @@ def print_obs_status(project, api = nil)
 
       package = row["_"]
       target = name.sub(/\/[^\/]*$/, "")
-      printf("    %-35s  %-30s  ", package, target)
+      msg = sprintf("    %-35s  %-30s  ", package, target)
 
-      if value == "succeeded"
-        puts Rainbow(value).green
+      path = (value == "failed") ? "package/live_build_log" : "package/show"
+      target = "" if value != "failed"
+      link = "#{obs_api_to_web(api)}/#{path}/#{project}/#{package}/#{target}"
+
+      msg << if value == "succeeded"
+        message(value, :success, link)
       elsif ["failed", "broken", "unresolvable"].include?(value)
-        print Rainbow(value).red
-
-        path = (value == "failed") ? "package/live_build_log" : "package/show"
-        target = "" if value != "failed"
-
-        link = if Options.instance.urls
-          Rainbow(" (#{obs_api_to_web(api)}/#{path}/#{project}/#{package}/#{target})").cyan
-        else
-          ""
-        end
-
-        puts link
         success = false
+        message(value, :error, link)
       else
-        puts Rainbow(value).yellow
+        message(value, :unknown)
       end
+
+      print_line(msg, !["failed", "broken", "unresolvable"].include?(value))
     end
   end
 
@@ -188,31 +197,58 @@ def docker_status_url(img)
   "https://hub.docker.com/v2/repositories/#{img}/buildhistory/?page_size=250"
 end
 
+def message(msg, type, url=nil)
+  ret = ""
+
+  if Options.instance.html
+    ret << "<span class=\"#{CGI.escapeHTML(type.to_s)} badge\">"
+    ret << "<a href=\"#{CGI.escapeHTML(url)}\">" if url
+    ret << CGI.escapeHTML(msg)
+    ret << "</a>" if url
+    ret << "</span>"
+    return ret
+  end
+
+  link = Options.instance.urls ? Rainbow(" (#{url})").cyan : ""
+
+  case type
+  when :error
+    Rainbow(msg).red + link
+  when :success
+    Rainbow(msg).green
+  when :info
+    Rainbow(msg).cyan
+  when :warning
+    Rainbow(msg).magenta
+  when :unknown
+    Rainbow(msg).yellow
+  else
+    msg
+  end
+end
+
 def print_docker_image_status(img, result)
   success = true
-  printf("    %-50s  ", r["dockertag_name"])
+  link = "https://hub.docker.com/r/#{img}/builds/#{result["build_code"]}/"
+  msg = sprintf("    %-50s  ", result["dockertag_name"])
 
   # "status" values:
   #     -1 = failed
   #   0..9 = building
   #     10 = success
-
-  puts case result["status"]
+  msg << case result["status"]
   when -1
     success = false
-    link = if Options.instance.urls
-      Rainbow(" (https://hub.docker.com/r/#{img}/builds/#{result["build_code"]}/)").cyan
-    else
-      ""
-    end
-    Rainbow("failed").red + link
+    message("failed", :error, link)
   when 10
-    Rainbow("success").green
+    message("success", :success, link)
   when 0..9
-    Rainbow("building").cyan
+    message("building", :info, link)
   else
-    Rainbow("unknown").magenta
+    message("unknown", :unknown, link)
   end
+
+  print_line(msg, result["status"] != -1)
 
   success
 end
@@ -238,28 +274,105 @@ def print_dockerhub_status(img)
   results.each do |r|
     next unless r["status"] < 0 || Options.instance.show_success
 
-    success = print_docker_image_status(img, result) && success
+    success = print_docker_image_status(img, r) && success
   end
 
   success
 end
 
-def print_result(res)
-  if res
-    puts Rainbow("✔ OK").green
-  else
-    puts Rainbow("✘ Failed").red
-  end
-end
-
 def print_header(title, url = nil)
+  if Options.instance.html
+    print "<h2>"
+    print "<a href=\"#{CGI.escapeHTML(url)}\">" if url
+    print CGI.escapeHTML(title)
+    print "</a>" if url
+    puts "</h2>"
+    return
+  end
+
   puts
   print title
   print Rainbow(" (#{url})").cyan if url && Options.instance.urls
   puts
 end
 
+def print_init
+  return unless Options.instance.html
+  puts <<~HEREDOC
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <title>YaST Status Overview</title>
+    <style>
+      body {background-color: #FAFAFA;font-family: sans-serif;
+        padding: 10px 30px;
+      }
+      h2 a {text-decoration: none; color: black;}
+      h2 a:hover {text-decoration: underline;}
+      .badge  {border-radius: 3px; padding: 3px 6px;
+        text-decoration: none; color: white;
+        font-weight: bold;
+      }
+      .badge a {
+        text-decoration: none; color: white;
+        font-weight: bold;
+      }
+      .badge a:hover {
+        text-decoration: underline;
+      }
+      .error  {background-color: red;}
+      .success  {background-color: green;}
+      .success_line  {display: none;}
+      #filter {
+        position: fixed; right: 0; top: 0;
+        border-bottom-left-radius: 10px;
+        background-color: #efefef;
+        padding: 20px; display: none;
+      }
+      footer {
+        color: lightgrey;
+        text-align: center;
+        margin-top: 200px;
+        font-size: small;
+      }
+    </style>
+      <script>
+        window.onload = function() {
+          document.getElementById('filter').style.display = "block";
+          document.getElementById('show_all').addEventListener('change', (event) => {
+            style = event.target.checked ? "block" : "none";
+            document.querySelectorAll('.success_line').forEach(e => e.style.display = style);
+          });
+        };
+      </script>
+    </head>
+    <body>
+
+    <div id="filter">
+      <label><input id="show_all" type="checkbox"/> Display also successful builds</label>
+    </div>
+
+    <h1>YaST Status Overview</h1>
+
+  HEREDOC
+end
+
+def print_end
+  return unless Options.instance.html
+
+  puts <<~HEREDOC
+
+    <footer>
+      #{Time.now.strftime("Generated at %c")}
+    </footer>
+    </body>
+    </html>
+  HEREDOC
+end
+
 ###################################################################################################
+
+print_init
 
 # OBS
 obs = ["YaST:SLE-12:SP3", "YaST:SLE-12:SP4", "YaST:SLE-15:GA", "YaST:Head"]
@@ -287,8 +400,6 @@ end
 # external Jenkins status
 success = jenkins_status("External Jenkins", "https://ci.opensuse.org/view/Yast") && success
 
-puts
-print Rainbow("Overall status: ").bright.yellow
-puts print_result(success)
+print_end
 
-exit success
+exit success unless Options.instance.html
