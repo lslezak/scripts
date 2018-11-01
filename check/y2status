@@ -131,12 +131,28 @@ def print_obs_status(project, api=nil)
       # display only important values or all if requested
       next unless ["failed", "broken", "unresolvable"].include?(value) || Options.instance.show_success
 
-      printf("    %-35s  %-30s  ", row["_"], name.sub(/\/[^\/]*$/, ""))
+      package = row["_"]
+      target = name.sub(/\/[^\/]*$/, "")
+      printf("    %-35s  %-30s  ", package, target)
 
       if value == "succeeded"
         puts Rainbow(value).green
       elsif ["failed", "broken", "unresolvable"].include?(value)
-        puts Rainbow(value).red
+        print Rainbow(value).red
+
+        host = if api.nil?
+          "https://build.opensuse.org"
+        elsif api == "https://api.suse.de"
+          "https://build.suse.de"
+        else
+          api
+        end
+
+        path = (value == "failed") ? "package/live_build_log" : "package/show"
+        target = "" if value != "failed"
+
+        link = Options.instance.urls ? Rainbow(" (#{host}/#{path}/#{project}/#{package}/#{target})").cyan : ""
+        puts link
         success = false
       else
         puts Rainbow(value).yellow
