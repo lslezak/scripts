@@ -36,7 +36,7 @@ class Options
         @public_only = p
       end
 
-      opts.on("-s", "--success", "Show also the successful results (default: false, only errors)") do |s|
+      opts.on("-s", "--success", "Show also the successful results (default: false)") do |s|
         @show_success = s
       end
 
@@ -87,7 +87,11 @@ def jenkins_status(title, base_url)
     puts case s["color"]
     when "red"
       success = false
-      link = Options.instance.urls ? Rainbow(" (#{base_url}/job/#{s["name"]}/lastBuild/console)").cyan : ""
+      link = if Options.instance.urls
+        Rainbow(" (#{base_url}/job/#{s["name"]}/lastBuild/console)").cyan
+      else
+        ""
+      end
       Rainbow("failed").red + link
     when "blue"
       Rainbow("success").green
@@ -101,7 +105,6 @@ def jenkins_status(title, base_url)
   success
 end
 
-
 #
 # Get the OBS project build state
 #
@@ -110,7 +113,7 @@ end
 #
 # @return [CSV::Table] the parsed table
 #
-def get_obs_status(project, api=nil)
+def get_obs_status(project, api = nil)
   print_verbose("Running osc prjresults #{project}...")
 
   opt = api ? "-A #{Shellwords.escape(api)}" : ""
@@ -134,7 +137,7 @@ def print_obs_header(project, api)
   print_header("#{type} #{project}", "#{obs_api_to_web(api)}/project/monitor/#{project}")
 end
 
-def print_obs_status(project, api=nil)
+def print_obs_status(project, api = nil)
   print_obs_header(project, api)
 
   table = get_obs_status(project, api)
@@ -149,7 +152,8 @@ def print_obs_status(project, api=nil)
       next if ["disabled", "excluded"].include?(value)
 
       # display only important values or all if requested
-      next unless ["failed", "broken", "unresolvable"].include?(value) || Options.instance.show_success
+      next unless ["failed", "broken", "unresolvable"].include?(value) ||
+          Options.instance.show_success
 
       package = row["_"]
       target = name.sub(/\/[^\/]*$/, "")
@@ -163,7 +167,12 @@ def print_obs_status(project, api=nil)
         path = (value == "failed") ? "package/live_build_log" : "package/show"
         target = "" if value != "failed"
 
-        link = Options.instance.urls ? Rainbow(" (#{obs_api_to_web(api)}/#{path}/#{project}/#{package}/#{target})").cyan : ""
+        link = if Options.instance.urls
+          Rainbow(" (#{obs_api_to_web(api)}/#{path}/#{project}/#{package}/#{target})").cyan
+        else
+          ""
+        end
+
         puts link
         success = false
       else
@@ -179,8 +188,33 @@ def docker_status_url(img)
   "https://hub.docker.com/v2/repositories/#{img}/buildhistory/?page_size=250"
 end
 
-def get_dockerhub_status(img)
-  download(url)
+def print_docker_image_status(img, result)
+  success = true
+  printf("    %-50s  ", r["dockertag_name"])
+
+  # "status" values:
+  #     -1 = failed
+  #   0..9 = building
+  #     10 = success
+
+  puts case result["status"]
+  when -1
+    success = false
+    link = if Options.instance.urls
+      Rainbow(" (https://hub.docker.com/r/#{img}/builds/#{result["build_code"]}/)").cyan
+    else
+      ""
+    end
+    Rainbow("failed").red + link
+  when 10
+    Rainbow("success").green
+  when 0..9
+    Rainbow("building").cyan
+  else
+    Rainbow("unknown").magenta
+  end
+
+  success
 end
 
 def print_dockerhub_status(img)
@@ -199,28 +233,12 @@ def print_dockerhub_status(img)
 
   # remove the duplicates, we need just the latest result for each tag
   results = status["results"]
-  results.uniq!{ |r| r["dockertag_name"]}
+  results.uniq! { |r| r["dockertag_name"] }
 
-  # "status" values:
-  #     -1 = failed
-  #   0..9 = building
-  #     10 = success
   results.each do |r|
     next unless r["status"] < 0 || Options.instance.show_success
-    printf("    %-50s  ", r["dockertag_name"])
 
-    puts case r["status"]
-    when -1
-      success = false
-      link = Options.instance.urls ? Rainbow(" (https://hub.docker.com/r/#{img}/builds/#{r["build_code"]}/)").cyan : ""
-      Rainbow("failed").red + link
-    when 10
-      Rainbow("success").green
-    when 0..9
-      Rainbow("building").cyan
-    else
-      Rainbow("unknown").magenta
-    end
+    success = print_docker_image_status(img, result) && success
   end
 
   success
@@ -245,22 +263,21 @@ end
 
 # OBS
 obs = ["YaST:SLE-12:SP3", "YaST:SLE-12:SP4", "YaST:SLE-15:GA", "YaST:Head"]
-success = obs.map{|r| print_obs_status(r)}.all?
+success = obs.map { |r| print_obs_status(r) }.all?
 
 # IBS
 if !Options.instance.public_only
   api = "https://api.suse.de"
   ibs = ["Devel:YaST:CASP:4.0", "Devel:YaST:SLE-12-SP3", "Devel:YaST:SLE-12-SP4",
-    "Devel:YaST:SLE-15", "Devel:YaST:Head"
-  ]
-  success = ibs.map{|r| print_obs_status(r, api)}.all? && success
+         "Devel:YaST:SLE-15", "Devel:YaST:Head"]
+  success = ibs.map { |r| print_obs_status(r, api) }.all? && success
 end
 
 # TODO: declined SR, e.g.: `osc request list -s declined YaST:Head`
 
 # Docker Hub status
 imgs = ["yastdevel/ruby", "yastdevel/cpp", "yastdevel/libstorage-ng", "libyui/devel"]
-success = imgs.map{|i| print_dockerhub_status(i)}.all? && success
+success = imgs.map { |i| print_dockerhub_status(i) }.all? && success
 
 if !Options.instance.public_only
   # internal Jenkins status
