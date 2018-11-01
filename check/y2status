@@ -46,7 +46,7 @@ class Options
         @show_success = s
       end
 
-      opts.on("-u", "--[no-]urls", "Display URL links with details (default: false)") do |u|
+      opts.on("-u", "--[no-]urls", "Display URL links with details in text output (default: false)") do |u|
         @urls = u
       end
 
@@ -359,7 +359,7 @@ def print_init
     <body>
 
     <div id="filter">
-      <label><input id="show_all" type="checkbox"/> Display also successful results</label>
+      <label><input id="show_all" type="checkbox" checked/> Display Only Failures</label>
     </div>
 
     <h1>YaST Status Overview</h1>
