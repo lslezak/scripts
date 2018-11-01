@@ -16,6 +16,7 @@ require "rainbow"
 require "shellwords"
 require "singleton"
 
+# parse and store the command line options
 class Options
   include Singleton
 
@@ -65,7 +66,9 @@ def download(url)
   `curl -sL #{Shellwords.escape(url)}`
 end
 
-def jenkins_status(base_url)
+def jenkins_status(title, base_url)
+  print_header(title, base_url)
+
   url = base_url + "/api/json?pretty=true"
   body = download(url)
 
@@ -172,6 +175,8 @@ def get_dockerhub_status(img)
 end
 
 def print_dockerhub_status(img)
+  print_header("Docker Hub #{img}", "https://hub.docker.com/r/#{img}/")
+
   url = docker_status_url(img)
   body = download(url)
 
@@ -227,6 +232,8 @@ def print_header(title, url = nil)
   puts
 end
 
+###################################################################################################
+
 success = true
 
 # OBS
@@ -271,39 +278,29 @@ if !Options.instance.public_only
   success &&= res
 end
 
-# TODO: declined SR: `osc request list -s declined YaST:Head`
+# TODO: declined SR, e.g.: `osc request list -s declined YaST:Head`
 
 # Docker Hub status
-img = "yastdevel/ruby"
-print_header("Docker Hub #{img}", "https://hub.docker.com/r/#{img}/")
-res = print_dockerhub_status(img)
+res = print_dockerhub_status("yastdevel/ruby")
 success &&= res
 
-img = "yastdevel/cpp"
-print_header("Docker Hub #{img}", "https://hub.docker.com/r/#{img}/")
-res = print_dockerhub_status(img)
+res = print_dockerhub_status("yastdevel/cpp")
 success &&= res
 
-img = "yastdevel/libstorage-ng"
-print_header("Docker Hub #{img}", "https://hub.docker.com/r/#{img}/")
-res = print_dockerhub_status(img)
+res = print_dockerhub_status("yastdevel/libstorage-ng")
 success &&= res
 
-img = "libyui/devel"
-print_header("Docker Hub #{img}", "https://hub.docker.com/r/#{img}/")
-res = print_dockerhub_status(img)
+res = print_dockerhub_status("libyui/devel")
 success &&= res
 
 if !Options.instance.public_only
   # internal Jenkins status
-  print_header("Internal Jenkins", "https://ci.suse.de/view/YaST")
-  res = jenkins_status("https://ci.suse.de/view/YaST")
+  res = jenkins_status("Internal Jenkins", "https://ci.suse.de/view/YaST")
   success &&= res
 end
 
 # external Jenkins status
-print_header("External Jenkins", "https://ci.opensuse.org/view/Yast")
-res = jenkins_status("https://ci.opensuse.org/view/Yast")
+res = jenkins_status("External Jenkins", "https://ci.opensuse.org/view/Yast")
 success &&= res
 
 puts
