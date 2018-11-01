@@ -119,7 +119,24 @@ def get_obs_status(project, api=nil)
   CSV.parse(str, col_sep: ";", headers: true)
 end
 
+def obs_api_to_web(api)
+  if api.nil?
+    "https://build.opensuse.org"
+  elsif api == "https://api.suse.de"
+    "https://build.suse.de"
+  else
+    api
+  end
+end
+
+def print_obs_header(project, api)
+  type = (api == "https://api.suse.de") ? "IBS" : "OBS"
+  print_header("#{type} #{project}", "#{obs_api_to_web(api)}/project/monitor/#{project}")
+end
+
 def print_obs_status(project, api=nil)
+  print_obs_header(project, api)
+
   table = get_obs_status(project, api)
 
   success = true
@@ -143,18 +160,10 @@ def print_obs_status(project, api=nil)
       elsif ["failed", "broken", "unresolvable"].include?(value)
         print Rainbow(value).red
 
-        host = if api.nil?
-          "https://build.opensuse.org"
-        elsif api == "https://api.suse.de"
-          "https://build.suse.de"
-        else
-          api
-        end
-
         path = (value == "failed") ? "package/live_build_log" : "package/show"
         target = "" if value != "failed"
 
-        link = Options.instance.urls ? Rainbow(" (#{host}/#{path}/#{project}/#{package}/#{target})").cyan : ""
+        link = Options.instance.urls ? Rainbow(" (#{obs_api_to_web(api)}/#{path}/#{project}/#{package}/#{target})").cyan : ""
         puts link
         success = false
       else
@@ -234,77 +243,35 @@ end
 
 ###################################################################################################
 
-success = true
-
 # OBS
-print_header("OBS YaST:SLE-12:SP3", "https://build.opensuse.org/project/monitor/YaST:SLE-12:SP3")
-res = print_obs_status("YaST:SLE-12:SP3")
-success &&= res
-
-print_header("OBS YaST:SLE-12:SP4", "https://build.opensuse.org/project/monitor/YaST:SLE-12:SP4")
-res = print_obs_status("YaST:SLE-12:SP4")
-success &&= res
-
-print_header("OBS YaST:SLE-15:GA", "https://build.opensuse.org/project/monitor/YaST:SLE-15:GA")
-res = print_obs_status("YaST:SLE-15:GA")
-success &&= res
-
-print_header("OBS YaST:Head", "https://build.opensuse.org/project/monitor/YaST:Head")
-res = print_obs_status("YaST:Head")
-success &&= res
+obs = ["YaST:SLE-12:SP3", "YaST:SLE-12:SP4", "YaST:SLE-15:GA", "YaST:Head"]
+success = obs.map{|r| print_obs_status(r)}.all?
 
 # IBS
 if !Options.instance.public_only
   api = "https://api.suse.de"
-
-  print_header("IBS Devel:YaST:CASP:4.0", "https://build.suse.de/project/monitor/Devel:YaST:CASP:4.0")
-  res = print_obs_status("Devel:YaST:CASP:4.0", api)
-  success &&= res
-
-  print_header("IBS Devel:YaST:SLE-12-SP3", "https://build.suse.de/project/monitor/Devel:YaST:SLE-12-SP3")
-  res = print_obs_status("Devel:YaST:SLE-12-SP3", api)
-  success &&= res
-
-  print_header("IBS Devel:YaST:SLE-12-SP4", "https://build.suse.de/project/monitor/Devel:YaST:SLE-12-SP4")
-  res = print_obs_status("Devel:YaST:SLE-12-SP4", api)
-  success &&= res
-
-  print_header("IBS Devel:YaST:SLE-15", "https://build.suse.de/project/monitor/Devel:YaST:SLE-15")
-  res = print_obs_status("Devel:YaST:SLE-15", api)
-  success &&= res
-
-  print_header("IBS Devel:YaST:Head", "https://build.suse.de/project/monitor/Devel:YaST:Head")
-  res = print_obs_status("Devel:YaST:Head", api)
-  success &&= res
+  ibs = ["Devel:YaST:CASP:4.0", "Devel:YaST:SLE-12-SP3", "Devel:YaST:SLE-12-SP4",
+    "Devel:YaST:SLE-15", "Devel:YaST:Head"
+  ]
+  success = ibs.map{|r| print_obs_status(r, api)}.all? && success
 end
 
 # TODO: declined SR, e.g.: `osc request list -s declined YaST:Head`
 
 # Docker Hub status
-res = print_dockerhub_status("yastdevel/ruby")
-success &&= res
-
-res = print_dockerhub_status("yastdevel/cpp")
-success &&= res
-
-res = print_dockerhub_status("yastdevel/libstorage-ng")
-success &&= res
-
-res = print_dockerhub_status("libyui/devel")
-success &&= res
+imgs = ["yastdevel/ruby", "yastdevel/cpp", "yastdevel/libstorage-ng", "libyui/devel"]
+success = imgs.map{|i| print_dockerhub_status(i)}.all? && success
 
 if !Options.instance.public_only
   # internal Jenkins status
-  res = jenkins_status("Internal Jenkins", "https://ci.suse.de/view/YaST")
-  success &&= res
+  success = jenkins_status("Internal Jenkins", "https://ci.suse.de/view/YaST") && success
 end
 
 # external Jenkins status
-res = jenkins_status("External Jenkins", "https://ci.opensuse.org/view/Yast")
-success &&= res
+success = jenkins_status("External Jenkins", "https://ci.opensuse.org/view/Yast") && success
 
 puts
 print Rainbow("Overall status: ").bright.yellow
 puts print_result(success)
 
-exit(success ? 0 : 1)
+exit success
