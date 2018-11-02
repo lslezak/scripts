@@ -454,6 +454,14 @@ end
 
 print_init
 
+if !Options.instance.public_only
+  # internal Jenkins status
+  success = jenkins_status("Internal Jenkins", "https://ci.suse.de/view/YaST") && success
+end
+
+# external Jenkins status
+success = jenkins_status("External Jenkins", "https://ci.opensuse.org/view/Yast") && success
+
 # OBS
 obs = ["YaST:SLE-12:SP3", "YaST:SLE-12:SP4", "YaST:SLE-15:GA", "YaST:Head"]
 success = obs.map { |r| print_obs_status(r) }.all?
@@ -469,14 +477,6 @@ end
 # Docker Hub status
 imgs = ["yastdevel/ruby", "yastdevel/cpp", "yastdevel/libstorage-ng", "libyui/devel"]
 success = imgs.map { |i| print_dockerhub_status(i) }.all? && success
-
-if !Options.instance.public_only
-  # internal Jenkins status
-  success = jenkins_status("Internal Jenkins", "https://ci.suse.de/view/YaST") && success
-end
-
-# external Jenkins status
-success = jenkins_status("External Jenkins", "https://ci.opensuse.org/view/Yast") && success
 
 print_end
 
