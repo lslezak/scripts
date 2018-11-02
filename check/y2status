@@ -71,7 +71,7 @@ end
 
 def print_line(line, success)
   if Options.instance.html
-    print "<pre class=\"#{success ? "success_line" : ""}\">"
+    print "<pre class=\"output_line #{success ? "success_line" : ""}\">"
     print line
     puts "</pre>"
   else
@@ -158,25 +158,53 @@ end
 
 def print_obs_header(project, api)
   type = (api == "https://api.suse.de") ? "IBS" : "OBS"
-  print_header("#{type} #{project}", "#{obs_api_to_web(api)}/project/monitor/#{project}")
+  print_header("#{type} #{project}", "#{obs_api_to_web(api)}/project/show/#{project}")
 end
 
-def declined_requests
-  out = `osc request list -s declined YaST:Head`
+def print_obs_request_header(project, api)
+  print_sub_header("Declined Submit Requests", "#{obs_api_to_web(api)}/project/requests/#{project}")
+end
+
+def declined_requests(project, api=nil)
+  opt = api ? "-A #{Shellwords.escape(api)}" : ""
+  cmd = "osc #{opt} request list -s declined #{Shellwords.escape(project)}"
+
+  print_progress("Running \"#{cmd}\"...")
+
+  begin
+    out = Timeout.timeout(15) { `#{cmd}` }
+  rescue Timeout::Error
+    print_error("ERROR: Command #{cmd} timed out")
+    out = ""
+  end
+
   # the requests are separated by empty lines
   requests = out.split("\n\n")
 
   ret = {}
   requests.each do |r|
-    r.match(/\A(\d+).*\n\s*(?:maintenance_incident|submit): (.*?)\n/m)
-    ret[Regexp.last_match[1]] = Regexp.last_match[2].strip
+    if r.match(/\A(\d+).*\n\s*(?:maintenance_incident|submit): (.*?)\n/m)
+      ret[Regexp.last_match[1]] = Regexp.last_match[2].strip
+    end
   end
 
   ret
 end
 
+def print_declined_requests(project, api=nil)
+  print_obs_request_header(project, api)
+  declined = declined_requests(project, api)
+
+  declined.each do |num, name|
+    link = "#{obs_api_to_web(api)}/request/show/#{num}"
+    msg = sprintf("    %-7s  %-90s  %s", html_link(num, link), name, message("declined", :error, link))
+    print_line(msg, false)
+  end
+end
+
 def print_obs_status(project, api = nil)
   print_obs_header(project, api)
+  print_sub_header("Build Results", "#{obs_api_to_web(api)}/project/monitor/#{project}")
 
   table = get_obs_status(project, api)
 
@@ -214,6 +242,8 @@ def print_obs_status(project, api = nil)
     end
   end
 
+  print_declined_requests(project, api)
+
   success
 end
 
@@ -221,14 +251,24 @@ def docker_status_url(img)
   "https://hub.docker.com/v2/repositories/#{img}/buildhistory/?page_size=250"
 end
 
+def html_link(text, url)
+  if Options.instance.html
+    ret = ""
+    ret << "<a href=\"#{CGI.escapeHTML(url)}\">" if url
+    ret << CGI.escapeHTML(text)
+    ret << "</a>" if url
+    ret
+  else
+    text
+  end
+end
+
 def message(msg, type, url = nil)
   ret = ""
 
   if Options.instance.html
     ret << "<span class=\"#{CGI.escapeHTML(type.to_s)} badge\">"
-    ret << "<a href=\"#{CGI.escapeHTML(url)}\">" if url
-    ret << CGI.escapeHTML(msg)
-    ret << "</a>" if url
+    ret << html_link(msg, url)
     ret << "</span>"
     return ret
   end
@@ -320,6 +360,22 @@ def print_header(title, url = nil)
   puts
 end
 
+def print_sub_header(title, url = nil)
+  if Options.instance.html
+    print "<h4>"
+    print "<a href=\"#{CGI.escapeHTML(url)}\">" if url
+    print CGI.escapeHTML(title)
+    print "</a>" if url
+    puts "</h4>"
+    return
+  end
+
+  puts
+  print title
+  print Rainbow(" (#{url})").cyan if url && Options.instance.urls
+  puts
+end
+
 def print_init
   return unless Options.instance.html
   puts <<-EOT
@@ -331,8 +387,8 @@ def print_init
       body {background-color: #FAFAFA;font-family: sans-serif;
         padding: 10px 30px;
       }
-      h2 a {text-decoration: none; color: black;}
-      h2 a:hover {text-decoration: underline;}
+      a {text-decoration: none; color: black;}
+      a:hover {text-decoration: underline;}
       .badge  {border-radius: 3px; padding: 3px 6px;
         text-decoration: none; color: white;
         font-weight: bold; background-color: lightgrey;
@@ -347,11 +403,12 @@ def print_init
       .error  {background-color: red;}
       .success  {background-color: green;}
       .success_line  {display: none;}
+      .output_line { margin: 2px; padding: 5px;}
+      .output_line:hover {background-color: #efefef;}
       #filter {
         position: fixed; right: 0; top: 0;
         border-bottom-left-radius: 10px;
-        background-color: #efefef;
-        padding: 20px; display: none;
+        background-color: #efefef; padding: 20px;
       }
       footer {
         color: lightgrey;
@@ -362,7 +419,6 @@ def print_init
     </style>
       <script>
         window.onload = function() {
-          document.getElementById('filter').style.display = "block";
           document.getElementById('show_all').addEventListener('change', (event) => {
             style = event.target.checked ? "none" : "block";
             document.querySelectorAll('.success_line').forEach(e => e.style.display = style);
@@ -409,8 +465,6 @@ if !Options.instance.public_only
          "Devel:YaST:SLE-15", "Devel:YaST:Head"]
   success = ibs.map { |r| print_obs_status(r, api) }.all? && success
 end
-
-# TODO: declined SR, e.g.: `osc request list -s declined YaST:Head`
 
 # Docker Hub status
 imgs = ["yastdevel/ruby", "yastdevel/cpp", "yastdevel/libstorage-ng", "libyui/devel"]
