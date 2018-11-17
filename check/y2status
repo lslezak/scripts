@@ -64,17 +64,14 @@ def jenkins_status(title, base_url)
     return false
   end
 
-  success = true
   status = JSON.parse(body)
 
   status["jobs"].each do |s|
-    next unless s["color"] == "red"
     link = "#{base_url}/job/#{s["name"]}/lastBuild/console)"
 
     msg = sprintf("    %-50s  ", s["name"])
     msg << case s["color"]
     when "red"
-      success = false
       message("failed", :error, link)
     when "blue"
       message("success", :success, link)
@@ -86,8 +83,6 @@ def jenkins_status(title, base_url)
 
     print_line(msg, s["color"] != "red")
   end
-
-  success
 end
 
 #
@@ -176,17 +171,10 @@ def print_obs_status(project, api = nil)
 
   table = get_obs_status(project, api)
 
-  success = true
   table.each do |row|
     row.each do |name, value|
       # skip the name pair
       next if name == "_"
-
-      # never show disabled or excluded builds
-      next if ["disabled", "excluded"].include?(value)
-
-      # display only important values or all if requested
-      next unless ["failed", "broken", "unresolvable"].include?(value)
 
       package = row["_"]
       target = name.sub(/\/[^\/]*$/, "")
@@ -199,7 +187,6 @@ def print_obs_status(project, api = nil)
       msg << if value == "succeeded"
                message(value, :success, link)
              elsif ["failed", "broken", "unresolvable"].include?(value)
-               success = false
                message(value, :error, link)
              else
                message(value, :unknown)
@@ -210,8 +197,6 @@ def print_obs_status(project, api = nil)
   end
 
   print_declined_requests(project, api)
-
-  success
 end
 
 def docker_status_url(img)
@@ -235,7 +220,6 @@ def message(msg, type, url = nil)
 end
 
 def print_docker_image_status(img, result)
-  success = true
   link = "https://hub.docker.com/r/#{img}/builds/#{result["build_code"]}/"
   msg = sprintf("    %-50s  ", result["dockertag_name"])
 
@@ -245,7 +229,6 @@ def print_docker_image_status(img, result)
   #     10 = success
   msg << case result["status"]
   when -1
-    success = false
     message("failed", :error, link)
   when 10
     message("success", :success, link)
@@ -256,8 +239,6 @@ def print_docker_image_status(img, result)
   end
 
   print_line(msg, result["status"] != -1)
-
-  success
 end
 
 def print_dockerhub_status(img)
@@ -271,7 +252,6 @@ def print_dockerhub_status(img)
     return false
   end
 
-  success = true
   status = JSON.parse(body)
 
   # remove the duplicates, we need just the latest result for each tag
@@ -279,12 +259,8 @@ def print_dockerhub_status(img)
   results.uniq! { |r| r["dockertag_name"] }
 
   results.each do |r|
-    next unless r["status"] < 0
-
-    success = print_docker_image_status(img, r) && success
+    print_docker_image_status(img, r)
   end
-
-  success
 end
 
 def print_header(title, url = nil)
@@ -380,26 +356,26 @@ print_init
 
 if !Options.instance.public_only
   # internal Jenkins status
-  success = jenkins_status("Internal Jenkins", "https://ci.suse.de/view/YaST") && success
+  jenkins_status("Internal Jenkins", "https://ci.suse.de/view/YaST")
 end
 
 # external Jenkins status
-success = jenkins_status("External Jenkins", "https://ci.opensuse.org/view/Yast") && success
+jenkins_status("External Jenkins", "https://ci.opensuse.org/view/Yast")
 
 # OBS
 obs = ["YaST:SLE-12:SP3", "YaST:SLE-12:SP4", "YaST:SLE-15:GA", "YaST:Head"]
-success = obs.map { |r| print_obs_status(r) }.all?
+obs.each { |r| print_obs_status(r) }
 
 # IBS
 if !Options.instance.public_only
   api = "https://api.suse.de"
   ibs = ["Devel:YaST:CASP:4.0", "Devel:YaST:SLE-12-SP3", "Devel:YaST:SLE-12-SP4",
          "Devel:YaST:SLE-15", "Devel:YaST:Head"]
-  success = ibs.map { |r| print_obs_status(r, api) }.all? && success
+  ibs.each { |r| print_obs_status(r, api) }
 end
 
 # Docker Hub status
 imgs = ["yastdevel/ruby", "yastdevel/cpp", "yastdevel/libstorage-ng", "libyui/devel"]
-success = imgs.map { |i| print_dockerhub_status(i) }.all? && success
+imgs.each { |i| print_dockerhub_status(i) }
 
 print_end
