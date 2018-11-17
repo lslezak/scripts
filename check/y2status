@@ -2,6 +2,7 @@
 
 require "cgi"
 require "csv"
+require "erb"
 require "json"
 require "optparse"
 require "shellwords"
@@ -32,13 +33,15 @@ class Options
   end
 end
 
-def print_progress(msg)
-  $stderr.puts(msg) if Options.instance.verbose
-end
+module Report
+  def print_progress(msg)
+    $stderr.puts(msg) if Options.instance.verbose
+  end
 
-def print_error(msg)
-  puts message(msg, :error)
-  $stderr.puts(msg)
+  def print_error(msg)
+    puts message(msg, :error)
+    $stderr.puts(msg)
+  end
 end
 
 def print_line(line, success)
@@ -47,10 +50,104 @@ def print_line(line, success)
   puts "</pre>"
 end
 
-def download(url)
-  print_progress("Downloading #{url}...")
-  # -s silent, -L follow redirects
-  `curl --connect-timeout 15 --max-time 30 -sL #{Shellwords.escape(url)}`
+module Downloader
+  def download(url)
+    print_progress("Downloading #{url}...")
+    # -s silent, -L follow redirects
+    `curl --connect-timeout 15 --max-time 30 -sL #{Shellwords.escape(url)}`
+  end
+end
+
+class Jenkins
+  include Downloader
+  include Report
+
+  attr_reader :base_url, :jobs
+
+  def initialize(base_url)
+    @base_url = base_url
+  end
+
+  def download
+    body = download(status_url)
+
+    if body.empty?
+      print_error("ERROR: Cannot download #{status_url}")
+      return
+    end
+  
+    status = JSON.parse(body)
+  
+    status["jobs"].each do |s|
+      jobs[s["name"]] = s["color"]
+    end
+  end
+
+  private
+
+  def status_url
+    "#{base_url}/api/json?pretty=true"
+  end
+end
+
+class Obs
+  include Downloader
+  include Report
+
+  attr_reader :api, :project, :status, :requests
+
+  def initialize(project, api)
+    @project = project
+    @api = api
+  end
+
+private
+
+  attr_writer :status
+
+  # Get the OBS project build state
+  #
+  # @param [String] project the project name
+  # @param [String,nil] api the API URL
+  #
+  # @return [CSV::Table] the parsed table
+  #
+  def get_obs_status
+    opt = api ? "-A #{Shellwords.escape(api)}" : ""
+    cmd = "osc #{opt} prjresults --csv #{Shellwords.escape(project)}"
+
+    print_progress("Running \"#{cmd}\"...")
+
+    begin
+      str = Timeout.timeout(15) { `#{cmd}` }
+    rescue Timeout::Error
+      print_error("ERROR: Command #{cmd} timed out")
+      str = ""
+    end
+
+    self.status = CSV.parse(str, col_sep: ";", headers: true)
+  end
+
+  def declined_requests
+    opt = api ? "-A #{Shellwords.escape(api)}" : ""
+    cmd = "osc #{opt} request list -s declined #{Shellwords.escape(project)}"
+  
+    print_progress("Running \"#{cmd}\"...")
+  
+    begin
+      out = Timeout.timeout(15) { `#{cmd}` }
+    rescue Timeout::Error
+      print_error("ERROR: Command #{cmd} timed out")
+      out = ""
+    end
+  
+    # the requests are separated by empty lines
+    out.split("\n\n").each do |r|
+      if r.match(/\A(\d+).*\n\s*(?:maintenance_incident|submit): (.*?)\n/m)
+        requests[Regexp.last_match[1]] = Regexp.last_match[2].strip
+      end
+    end
+  end
 end
 
 def jenkins_status(title, base_url)
@@ -351,6 +448,16 @@ def print_end
 end
 
 ###################################################################################################
+
+template = "#{__dir__}/index.html.erb"
+renderer = ERB.new(File.read(template))
+renderer.filename = template
+
+body = "TEXT"
+
+puts renderer.result(binding)
+
+exit 0
 
 print_init
 

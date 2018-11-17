@@ -1,0 +1,32 @@
+body {background-color: #FAFAFA;font-family: sans-serif;
+  padding: 10px 30px;
+}
+a {text-decoration: none; color: black;}
+a:hover {text-decoration: underline;}
+.badge  {border-radius: 3px; padding: 3px 6px;
+  text-decoration: none; color: white;
+  font-weight: bold; background-color: lightgrey;
+}
+.badge a {
+  text-decoration: none; color: white;
+  font-weight: bold;
+}
+.badge a:hover {
+  text-decoration: underline;
+}
+.error  {background-color: red;}
+.success  {background-color: green;}
+.success_line  {display: none;}
+.output_line { margin: 2px; padding: 5px;}
+.output_line:hover {background-color: #efefef;}
+#filter {
+  position: fixed; right: 0; top: 0;
+  border-bottom-left-radius: 10px;
+  background-color: #efefef; padding: 20px;
+}
+footer {
+  color: lightgrey;
+  text-align: center;
+  margin-top: 200px;
+  font-size: small;
+}

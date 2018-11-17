@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>YaST Status Overview</title>
+
+  <style>
+    <%= File.read("_style.css") %>
+  </style>
+
+  <script>
+    <%= File.read("_script.js") %>
+  </script>
+</head>
+
+<body>
+  <div id="filter">
+    <label><input id="show_all" type="checkbox" checked/> Display Only Failures</label>
+  </div>
+
+  <h1>YaST Status Overview</h1>
+
+  <%= body %>
+
+  <footer>
+    Generated at <%= Time.now.strftime("%c %Z") %>
+  </footer>
+</body>
+</html>
