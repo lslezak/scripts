@@ -12,7 +12,7 @@ require "timeout"
 class Options
   include Singleton
 
-  attr_reader :verbose, :urls, :public_only, :html
+  attr_reader :verbose, :public_only, :html
 
   def initialize
     @only_errors = true
@@ -26,10 +26,6 @@ class Options
 
       opts.on("-p", "--public", "Query only the public services (default: false)") do |p|
         @public_only = p
-      end
-
-      opts.on("-u", "--[no-]urls", "Display URL links with details in text output (default: false)") do |u|
-        @urls = u
       end
 
       opts.on("-v", "--[no-]verbose", "Run verbosely (default: false)") do |v|
@@ -320,7 +316,7 @@ def print_header(title, url = nil)
 
   puts
   print title
-  print " (#{url})" if url && Options.instance.urls
+  print " (#{url})" if url
   puts
 end
 
