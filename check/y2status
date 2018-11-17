@@ -12,17 +12,13 @@ require "timeout"
 class Options
   include Singleton
 
-  attr_reader :verbose, :public_only, :html
+  attr_reader :verbose, :public_only
 
   def initialize
     @only_errors = true
 
     OptionParser.new do |opts|
       opts.banner = "Usage: #{$PROGRAM_NAME} [options]"
-
-      opts.on("-w", "--web", "HTML Output (default: false)") do |h|
-        @html = h
-      end
 
       opts.on("-p", "--public", "Query only the public services (default: false)") do |p|
         @public_only = p
@@ -42,17 +38,13 @@ end
 
 def print_error(msg)
   puts message(msg, :error)
-  $stderr.puts(msg) if Options.instance.html
+  $stderr.puts(msg)
 end
 
 def print_line(line, success)
-  if Options.instance.html
-    print "<pre class=\"output_line #{success ? "success_line" : ""}\">"
-    print line
-    puts "</pre>"
-  else
-    puts line
-  end
+  print "<pre class=\"output_line #{success ? "success_line" : ""}\">"
+  print line
+  puts "</pre>"
 end
 
 def download(url)
@@ -227,28 +219,19 @@ def docker_status_url(img)
 end
 
 def html_link(text, url)
-  if Options.instance.html
-    ret = ""
-    ret << "<a href=\"#{CGI.escapeHTML(url)}\">" if url
-    ret << CGI.escapeHTML(text)
-    ret << "</a>" if url
-    ret
-  else
-    text
-  end
+  ret = ""
+  ret << "<a href=\"#{CGI.escapeHTML(url)}\">" if url
+  ret << CGI.escapeHTML(text)
+  ret << "</a>" if url
+  ret
 end
 
 def message(msg, type, url = nil)
   ret = ""
-
-  if Options.instance.html
-    ret << "<span class=\"#{CGI.escapeHTML(type.to_s)} badge\">"
-    ret << html_link(msg, url)
-    ret << "</span>"
-    return ret
-  end
-
-  msg
+  ret << "<span class=\"#{CGI.escapeHTML(type.to_s)} badge\">"
+  ret << html_link(msg, url)
+  ret << "</span>"
+  ret
 end
 
 def print_docker_image_status(img, result)
@@ -305,39 +288,22 @@ def print_dockerhub_status(img)
 end
 
 def print_header(title, url = nil)
-  if Options.instance.html
-    print "<h2>"
-    print "<a href=\"#{CGI.escapeHTML(url)}\">" if url
-    print CGI.escapeHTML(title)
-    print "</a>" if url
-    puts "</h2>"
-    return
-  end
-
-  puts
-  print title
-  print " (#{url})" if url
-  puts
+  print "<h2>"
+  print "<a href=\"#{CGI.escapeHTML(url)}\">" if url
+  print CGI.escapeHTML(title)
+  print "</a>" if url
+  puts "</h2>"
 end
 
 def print_sub_header(title, url = nil)
-  if Options.instance.html
-    print "<h4>"
-    print "<a href=\"#{CGI.escapeHTML(url)}\">" if url
-    print CGI.escapeHTML(title)
-    print "</a>" if url
-    puts "</h4>"
-    return
-  end
-
-  puts
-  print title
-  print Rainbow(" (#{url})").cyan if url && Options.instance.urls
-  puts
+  print "<h4>"
+  print "<a href=\"#{CGI.escapeHTML(url)}\">" if url
+  print CGI.escapeHTML(title)
+  print "</a>" if url
+  puts "</h4>"
 end
 
 def print_init
-  return unless Options.instance.html
   puts <<-EOT
     <!DOCTYPE html>
     <html>
@@ -398,8 +364,6 @@ def print_init
 end
 
 def print_end
-  return unless Options.instance.html
-
   puts <<-EOT
 
     <footer>
@@ -439,5 +403,3 @@ imgs = ["yastdevel/ruby", "yastdevel/cpp", "yastdevel/libstorage-ng", "libyui/de
 success = imgs.map { |i| print_dockerhub_status(i) }.all? && success
 
 print_end
-
-exit success unless Options.instance.html
