@@ -1,19 +1,9 @@
 #!/usr/bin/env ruby
 
-# install missing gems
-if !File.exist?(".vendor")
-  puts "Installing the needed Rubygems to .vendor/bundle ..."
-  system "bundle install --path .vendor/bundle"
-end
-
-require "rubygems"
-require "bundler/setup"
-
 require "cgi"
 require "csv"
 require "json"
 require "optparse"
-require "rainbow"
 require "shellwords"
 require "singleton"
 require "timeout"
@@ -22,17 +12,13 @@ require "timeout"
 class Options
   include Singleton
 
-  attr_reader :verbose, :show_success, :color, :urls, :public_only, :html
+  attr_reader :verbose, :show_success, :urls, :public_only, :html
 
   def initialize
     @only_errors = true
 
     OptionParser.new do |opts|
       opts.banner = "Usage: #{$PROGRAM_NAME} [options]"
-
-      opts.on("-c", "--[no-]color", "Colorize the output (default: auto, enabled on TTY)") do |c|
-        Rainbow.enabled = c
-      end
 
       opts.on("-w", "--web", "HTML Output (default: false)") do |h|
         @html = h
@@ -273,22 +259,7 @@ def message(msg, type, url = nil)
     return ret
   end
 
-  link = Options.instance.urls ? Rainbow(" (#{url})").cyan : ""
-
-  case type
-  when :error
-    Rainbow(msg).red + link
-  when :success
-    Rainbow(msg).green
-  when :info
-    Rainbow(msg).cyan
-  when :warning
-    Rainbow(msg).magenta
-  when :unknown
-    Rainbow(msg).yellow
-  else
-    msg
-  end
+  msg
 end
 
 def print_docker_image_status(img, result)
@@ -356,7 +327,7 @@ def print_header(title, url = nil)
 
   puts
   print title
-  print Rainbow(" (#{url})").cyan if url && Options.instance.urls
+  print " (#{url})" if url && Options.instance.urls
   puts
 end
 
