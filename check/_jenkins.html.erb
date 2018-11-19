@@ -1,0 +1,37 @@
+<% jenkins_servers.each do |s|%>
+
+<h3>
+<img src="https://ci.opensuse.org/static/059b3e24/images/headshot.png" alt="Jenkins icon" height="20">
+<a href="<% h(s.base_url) %>">
+  <%= s.label %>
+</a>
+<% if s.success? %>
+  <span style="color:green">✔</span>
+<% else %>
+  <span style="color:red">✘</span>
+<% end %>
+</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Job</th>
+      <th>Status</th> 
+    </tr>
+  </thead>
+  <tbody>
+    <% s.jobs.each do |j| %>
+      <tr class="output_line">
+        <td><%= h(j.name) %></td>
+        <td class="center">
+          <span class="badge <%= h(j.status_type) %>">
+            <a href="<%= h(s.console_url(j.name)) %>">
+              <%= h(j.status_label) %></td>
+            </a>
+          </span>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+<% end %>
