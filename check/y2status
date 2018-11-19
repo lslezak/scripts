@@ -89,19 +89,15 @@ private
     body = download_url(status_url)
 
     if body.empty?
-      @error = "ERROR: Cannot download #{status_url}"
+      @error = "Cannot download #{status_url}"
       print_error(error)
-      return {}
+      return []
     end
-
-    job_list = []
 
     data = JSON.parse(body)
-    data["jobs"].each do |s|
-      job_list << JenkinsJob.new(s["name"], s["color"])
+    data["jobs"].map do |s|
+      JenkinsJob.new(s["name"], s["color"])
     end
-
-    job_list
   end
 end
 
@@ -196,38 +192,6 @@ private
         requests[Regexp.last_match[1]] = Regexp.last_match[2].strip
       end
     end
-  end
-end
-
-def jenkins_status(title, base_url)
-  print_header(title, base_url)
-
-  url = base_url + "/api/json?pretty=true"
-  body = download(url)
-
-  if body.empty?
-    print_error("ERROR: Cannot download #{url}")
-    return false
-  end
-
-  status = JSON.parse(body)
-
-  status["jobs"].each do |s|
-    link = "#{base_url}/job/#{s["name"]}/lastBuild/console)"
-
-    msg = sprintf("    %-50s  ", s["name"])
-    msg << case s["color"]
-    when "red"
-      message("failed", :error, link)
-    when "blue"
-      message("success", :success, link)
-    when "disabled"
-      message("disabled", :info, link)
-    else
-      message(s["color"], :unknown, link)
-    end
-
-    print_line(msg, s["color"] != "red")
   end
 end
 
@@ -363,6 +327,86 @@ def message(msg, type, url = nil)
   ret << html_link(msg, url)
   ret << "</span>"
   ret
+end
+
+class DockerBuild
+  attr_reader :tag, :status
+
+  def initialize(tag, status)
+    @tag = tag
+    @status = status
+  end
+
+  def status_label
+    # "status" values:
+    #     -1 = failed
+    #   0..9 = building
+    #     10 = success
+    case status
+    when -1
+      "failed"
+    when 10
+      "success"
+    when 0..9
+      "building"
+    else
+      "unknown"
+    end
+  end
+
+  def status_type
+    case status
+    when -1
+      :error
+    when 10
+      :success
+    when 0..9
+      :info
+    else
+      :unknown
+    end
+  end
+end
+
+class DockerImage
+  include Downloader
+  include Report
+
+  attr_reader :image, :error
+
+  def initialize(image)
+    @image = image
+  end
+
+  def builds
+    @builds ||= download
+  end
+
+  private
+
+  def docker_status_url
+    "https://hub.docker.com/v2/repositories/#{image}/buildhistory/?page_size=250"
+  end
+
+  def download
+    body = download_url(docker_status_url)
+
+    if body.empty?
+      @error = "Cannot download the build status"
+      print_error(error)
+      return []
+    end
+
+    status = JSON.parse(body)
+
+    # remove the duplicates, we need just the latest result for each tag
+    results = status["results"]
+    results.uniq! { |r| r["dockertag_name"] }
+
+    results.map do |r|
+      DockerBuild.new(r["dockertag_name"], result["status"])
+    end
+  end
 end
 
 def print_docker_image_status(img, result)
