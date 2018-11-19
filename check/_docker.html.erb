@@ -1,0 +1,30 @@
+<% docker_images.each do |d| %>
+
+<h3>
+<a href="<%#= h(d.base_url) %>">
+  <%= h(d.image) %>
+</a>
+<% if d.success? %>
+  <span style="color:green">✔</span>
+<% else %>
+  <span style="color:red">✘</span>
+<% end %>
+</h3>
+
+<table>
+  <tbody>
+    <% d.builds.each do |b| %>
+      <tr class="<%= b.status_type != :error ? "success_row" : "" %>">
+        <td><%= h(b.tag) %></td>
+        <td class="center">
+          <span class="badge badge_<%= h(b.status_type) %>">
+            <a href="<%#= h(s.console_url(j.name)) %>">
+              <%= h(b.status_label) %></td>
+            </a>
+          </span>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+<% end %>

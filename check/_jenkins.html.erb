@@ -1,8 +1,7 @@
 <% jenkins_servers.each do |s|%>
 
 <h3>
-<img src="https://ci.opensuse.org/static/059b3e24/images/headshot.png" alt="Jenkins icon" height="20">
-<a href="<% h(s.base_url) %>">
+<a href="<%= h(s.base_url) %>">
   <%= s.label %>
 </a>
 <% if s.success? %>
