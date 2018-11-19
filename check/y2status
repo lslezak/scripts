@@ -16,8 +16,6 @@ class Options
   attr_reader :verbose, :public_only
 
   def initialize
-    @only_errors = true
-
     OptionParser.new do |opts|
       opts.banner = "Usage: #{$PROGRAM_NAME} [options]"
 

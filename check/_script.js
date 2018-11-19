@@ -1,6 +1,6 @@
 window.onload = function() {
   document.getElementById('show_all').addEventListener('change', (event) => {
-    style = event.target.checked ? "none" : "block";
-    document.querySelectorAll('.success_line').forEach(e => e.style.display = style);
+    style = event.target.checked ? "none" : "table-row";
+    document.querySelectorAll('.success_row').forEach(e => e.style.display = style);
   });
 };

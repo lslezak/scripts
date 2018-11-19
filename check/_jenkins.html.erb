@@ -13,18 +13,12 @@
 </h3>
 
 <table>
-  <thead>
-    <tr>
-      <th>Job</th>
-      <th>Status</th> 
-    </tr>
-  </thead>
   <tbody>
     <% s.jobs.each do |j| %>
-      <tr class="output_line">
+      <tr class="<%= j.status_type != :error ? "success_row" : "" %>">
         <td><%= h(j.name) %></td>
         <td class="center">
-          <span class="badge <%= h(j.status_type) %>">
+          <span class="badge badge_<%= h(j.status_type) %>">
             <a href="<%= h(s.console_url(j.name)) %>">
               <%= h(j.status_label) %></td>
             </a>

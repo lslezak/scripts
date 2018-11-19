@@ -64,14 +64,8 @@ a {text-decoration: none; color: black;}
 a:hover {text-decoration: underline;}
 
 table {margin: 5px; 0}
-
-th { font-size: 110%; font-weight: bold; padding: 3px; border-bottom: 2px solid #ddd;}
-
-tbody tr:nth-child(1) {
-  padding-top: 2px;
-}
-
-td { padding: 5px; }
+tbody tr:hover {background-color: #efefef;}
+td { padding: 5px 10px; }
 
 .center { text-align: center; vertical-align: middle; }
 
@@ -86,11 +80,10 @@ td { padding: 5px; }
   text-decoration: underline;
 }
 
-.error  {background-color: red;}
-.success  {background-color: green;}
+.badge_error  {background-color: red;}
+.badge_success  {background-color: green;}
 
-.success_line  {display: none;}
-.output_line:hover {background-color: #efefef;}
+.success_row {display: none;}
 
 #filter {
   position: fixed; right: 0; top: 0;
