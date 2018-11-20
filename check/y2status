@@ -37,7 +37,6 @@ module Report
   end
 
   def print_error(msg)
-    puts message(msg, :error)
     $stderr.puts(msg)
   end
 end
@@ -134,16 +133,86 @@ class JenkinsJob
   end
 end
 
+class ObsBuild
+  attr_reader :package, :target, :status
 
-class Obs
+  def initialize(package, target, status)
+    @package = package
+    @target = target
+    @status = status
+  end
+
+  def status_label
+    status
+  end
+
+  def status_type
+    case status
+    when "failed", "broken", "unresolvable"
+      :error
+    when "succeeded"
+      :success
+    when "disabled", "excluded"
+      :info
+    else
+      :unknown
+    end
+  end
+end
+
+class ObsRequest
+  attr_reader :id, :details
+
+  def initialize(id, details)
+    @id = id
+    @details = details
+  end
+end
+
+class ObsProject
   include Downloader
   include Report
 
-  attr_reader :api, :project, :status, :requests
+  attr_reader :api, :name, :error_status, :error_requests
 
-  def initialize(project, api)
-    @project = project
+  def initialize(name, api = nil)
+    @name = name
     @api = api
+  end
+
+  def builds
+    @builds ||= download_builds
+  end
+
+  def declined_requests
+    @requests ||= download_declined_requests
+  end
+
+  def project_url
+    "TODO"
+  end
+
+  def web_url
+    if api.nil?
+      "https://build.opensuse.org"
+    elsif api == "https://api.suse.de"
+      "https://build.suse.de"
+    else
+      # fallback for an unknown OBS instance
+      api
+    end
+  end
+  
+  def builds?
+    !builds.any?{ |b| ["failed", "broken", "unresolvable"].include?(b.status) }
+  end
+
+  def declined?
+    !declined_requests.empty?
+  end
+
+  def success?
+     builds? && !declined?
   end
 
 private
@@ -157,9 +226,9 @@ private
   #
   # @return [CSV::Table] the parsed table
   #
-  def get_obs_status
+  def download_builds
     opt = api ? "-A #{Shellwords.escape(api)}" : ""
-    cmd = "osc #{opt} prjresults --csv #{Shellwords.escape(project)}"
+    cmd = "osc #{opt} prjresults --csv #{Shellwords.escape(name)}"
 
     print_progress("Running \"#{cmd}\"...")
 
@@ -170,26 +239,40 @@ private
       str = ""
     end
 
-    self.status = CSV.parse(str, col_sep: ";", headers: true)
+    table = CSV.parse(str, col_sep: ";", headers: true)
+
+    table.each_with_object([]) do |row, list|
+      row.each do |name, status|
+        # skip the name pair from the header
+        next if name == "_"
+
+        package = row["_"]
+        target = name.sub(/\/[^\/]*$/, "")
+
+        list << ObsBuild.new(package, target, status)
+      end
+    end
   end
 
-  def declined_requests
+  def download_declined_requests
     opt = api ? "-A #{Shellwords.escape(api)}" : ""
-    cmd = "osc #{opt} request list -s declined #{Shellwords.escape(project)}"
+    cmd = "osc #{opt} request list -s declined #{Shellwords.escape(name)}"
 
     print_progress("Running \"#{cmd}\"...")
 
     begin
       out = Timeout.timeout(15) { `#{cmd}` }
     rescue Timeout::Error
-      print_error("ERROR: Command #{cmd} timed out")
+      @error_status = "ERROR: Command #{cmd} timed out"
+      print_error(error_status)
       out = ""
     end
 
     # the requests are separated by empty lines
-    out.split("\n\n").each do |r|
+    out.split("\n\n").each_with_object([]) do |r, list|
       if r.match(/\A(\d+).*\n\s*(?:maintenance_incident|submit): (.*?)\n/m)
-        requests[Regexp.last_match[1]] = Regexp.last_match[2].strip
+        # remove repeated spaces by #sqeeze
+        list << ObsRequest.new(Regexp.last_match[1], Regexp.last_match[2].strip.squeeze(" "))
       end
     end
   end
@@ -217,16 +300,6 @@ def get_obs_status(project, api = nil)
   end
 
   CSV.parse(str, col_sep: ";", headers: true)
-end
-
-def obs_api_to_web(api)
-  if api.nil?
-    "https://build.opensuse.org"
-  elsif api == "https://api.suse.de"
-    "https://build.suse.de"
-  else
-    api
-  end
 end
 
 def print_obs_header(project, api)
@@ -418,6 +491,25 @@ if !Options.instance.public_only
   jenkins_servers << Jenkins.new("Internal Jenkins", "https://ci.suse.de/view/YaST")
 end
 
+
+# OBS
+obs_projects = ["YaST:Head", "YaST:SLE-15:GA", "YaST:SLE-12:SP4", "YaST:SLE-12:SP3" ].map do |p|
+  ObsProject.new(p)
+end
+
+obs_partial = render_erb("_obs.html.erb", binding)
+
+# IBS
+if !Options.instance.public_only
+  obs_projects = ["Devel:YaST:CASP:4.0", "Devel:YaST:SLE-12-SP3", "Devel:YaST:SLE-12-SP4",
+    "Devel:YaST:SLE-15", "Devel:YaST:Head"].map do |p|
+    ObsProject.new(p, "https://api.suse.de")
+  end
+
+  obs_partial += render_erb("_obs.html.erb", binding)
+end
+
+
 docker_images = ["yastdevel/ruby", "yastdevel/cpp", "yastdevel/libstorage-ng", "libyui/devel"].map do |i|
   DockerImage.new(i)
 end
@@ -430,15 +522,4 @@ puts render_erb("index.html.erb", binding)
 
 exit 0
 
-# OBS
-obs = ["YaST:SLE-12:SP3", "YaST:SLE-12:SP4", "YaST:SLE-15:GA", "YaST:Head"]
-obs.each { |r| print_obs_status(r) }
-
-# IBS
-if !Options.instance.public_only
-  api = "https://api.suse.de"
-  ibs = ["Devel:YaST:CASP:4.0", "Devel:YaST:SLE-12-SP3", "Devel:YaST:SLE-12-SP4",
-         "Devel:YaST:SLE-15", "Devel:YaST:Head"]
-  ibs.each { |r| print_obs_status(r, api) }
-end
 

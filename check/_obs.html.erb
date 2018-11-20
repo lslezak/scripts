@@ -1,0 +1,48 @@
+<% obs_projects.each do |p|%>
+
+<h3>
+<a href="<%= h(p.project_url) %>"><%= p.name %></a>
+<%= status_symbol(p) %>
+</h3>
+
+<h4 class="<%= p.builds? ? "success_row" : "" %>">Build Results</h4>
+
+<table>
+  <tbody>
+    <% p.builds.each do |b| %>
+      <tr class="<%= b.status_type != :error ? "success_row" : "" %>">
+        <td><%= h(b.package) %></td>
+        <td><%= h(b.target) %></td>
+        <td class="center">
+          <span class="badge badge_<%= h(b.status_type) %>">
+            <a href="<%= "FIXME" %>">
+              <%= h(b.status_label) %>
+            </a>
+          </span>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<h4 class="<%= !p.declined? ? "success_row" : "" %>">Declined Submit Requests</h4>
+
+<table>
+  <tbody>
+    <% p.declined_requests.each do |r| %>
+      <tr>
+        <td><%= h(r.id) %></td>
+        <td><%= h(r.details) %></td>
+        <td class="center">
+          <span class="badge badge_error">
+            <a href="<%= "FIXME" %>">
+              declined
+            </a>
+          </span>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<% end %>
