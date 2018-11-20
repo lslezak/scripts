@@ -42,17 +42,17 @@ module Report
   end
 end
 
-def print_line(line, success)
-  print "<pre class=\"output_line #{success ? "success_line" : ""}\">"
-  print line
-  puts "</pre>"
-end
-
 module Downloader
   def download_url(url)
     print_progress("Downloading #{url}...")
     # -s silent, -L follow redirects
     `curl --connect-timeout 15 --max-time 30 -sL #{Shellwords.escape(url)}`
+  end
+end
+
+module HTML
+  def status_symbol(obj)
+    "<span class=\"#{obj.success? ? "success" : "failed"}_mark\"></span>"
   end
 end
 
@@ -309,26 +309,6 @@ def print_obs_status(project, api = nil)
   print_declined_requests(project, api)
 end
 
-def docker_status_url(img)
-  "https://hub.docker.com/v2/repositories/#{img}/buildhistory/?page_size=250"
-end
-
-def html_link(text, url)
-  ret = ""
-  ret << "<a href=\"#{CGI.escapeHTML(url)}\">" if url
-  ret << CGI.escapeHTML(text)
-  ret << "</a>" if url
-  ret
-end
-
-def message(msg, type, url = nil)
-  ret = ""
-  ret << "<span class=\"#{CGI.escapeHTML(type.to_s)} badge\">"
-  ret << html_link(msg, url)
-  ret << "</span>"
-  ret
-end
-
 class DockerBuild
   attr_reader :tag, :status
 
@@ -413,68 +393,10 @@ class DockerImage
   end
 end
 
-def print_docker_image_status(img, result)
-  link = "https://hub.docker.com/r/#{img}/builds/#{result["build_code"]}/"
-  msg = sprintf("    %-50s  ", result["dockertag_name"])
-
-  # "status" values:
-  #     -1 = failed
-  #   0..9 = building
-  #     10 = success
-  msg << case result["status"]
-  when -1
-    message("failed", :error, link)
-  when 10
-    message("success", :success, link)
-  when 0..9
-    message("building", :info, link)
-  else
-    message("unknown", :unknown, link)
-  end
-
-  print_line(msg, result["status"] != -1)
-end
-
-def print_dockerhub_status(img)
-  print_header("Docker Hub #{img}", "https://hub.docker.com/r/#{img}/")
-
-  url = docker_status_url(img)
-  body = download(url)
-
-  if body.empty?
-    print_error("ERROR: Cannot download #{url}")
-    return false
-  end
-
-  status = JSON.parse(body)
-
-  # remove the duplicates, we need just the latest result for each tag
-  results = status["results"]
-  results.uniq! { |r| r["dockertag_name"] }
-
-  results.each do |r|
-    print_docker_image_status(img, r)
-  end
-end
-
-def print_header(title, url = nil)
-  print "<h2>"
-  print "<a href=\"#{CGI.escapeHTML(url)}\">" if url
-  print CGI.escapeHTML(title)
-  print "</a>" if url
-  puts "</h2>"
-end
-
-def print_sub_header(title, url = nil)
-  print "<h4>"
-  print "<a href=\"#{CGI.escapeHTML(url)}\">" if url
-  print CGI.escapeHTML(title)
-  print "</a>" if url
-  puts "</h4>"
-end
-
 def render_erb(template, bind)
   include ERB::Util
+  include HTML
+
   file = File.join(__dir__, template)
   renderer = ERB.new(File.read(file))
   renderer.filename = template
@@ -508,14 +430,6 @@ puts render_erb("index.html.erb", binding)
 
 exit 0
 
-if !Options.instance.public_only
-  # internal Jenkins status
-  jenkins_status("Internal Jenkins", "https://ci.suse.de/view/YaST")
-end
-
-# external Jenkins status
-jenkins_status("External Jenkins", "https://ci.opensuse.org/view/Yast")
-
 # OBS
 obs = ["YaST:SLE-12:SP3", "YaST:SLE-12:SP4", "YaST:SLE-15:GA", "YaST:Head"]
 obs.each { |r| print_obs_status(r) }
@@ -528,6 +442,3 @@ if !Options.instance.public_only
   ibs.each { |r| print_obs_status(r, api) }
 end
 
-# Docker Hub status
-imgs = ["yastdevel/ruby", "yastdevel/cpp", "yastdevel/libstorage-ng", "libyui/devel"]
-imgs.each { |i| print_dockerhub_status(i) }

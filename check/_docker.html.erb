@@ -1,15 +1,8 @@
 <% docker_images.each do |d| %>
 
 <h3>
-<a href="<%#= h(d.base_url) %>">
-  Image
-  <%= h(d.image) %>
-</a>
-<% if d.success? %>
-  <span style="color:green">✔</span>
-<% else %>
-  <span style="color:red">✘</span>
-<% end %>
+<a href="<%#= h(d.base_url) %>">Image <%= h(d.image) %></a>
+<%= status_symbol(d) %>
 </h3>
 
 <table>

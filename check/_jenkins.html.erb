@@ -1,14 +1,8 @@
 <% jenkins_servers.each do |s|%>
 
 <h3>
-<a href="<%= h(s.base_url) %>">
-  <%= s.label %>
-</a>
-<% if s.success? %>
-  <span style="color:green">✔</span>
-<% else %>
-  <span style="color:red">✘</span>
-<% end %>
+<a href="<%= h(s.base_url) %>"><%= s.label %></a>
+<%= status_symbol(s) %>
 </h3>
 
 <table>
