@@ -60,17 +60,6 @@ h3 { font-size: 120%; margin: 1.0em 0; font-weight: bold;}
 h4 { font-size: 100%; margin: 0.7em 0; font-weight: bold;}
 h5 { font-size: 100%; margin: 0.4em 0; font-weight: bold;}
 
-
-.success_mark::after {
-  color: green;
-	content: '✔';
-}
-
-.failed_mark::after {
-  color: red;
-	content: '✘';
-}
-
 a {text-decoration: none; color: black;}
 a:hover {text-decoration: underline;}
 

@@ -1,7 +1,7 @@
 <% docker_images.each do |d| %>
 
 <h3>
-<a href="<%#= h(d.base_url) %>">Image <%= h(d.image) %></a>
+<a href="<%= h(d.url) %>">Image <%= h(d.image) %></a>
 <%= status_symbol(d) %>
 </h3>
 
@@ -11,7 +11,7 @@
       <tr class="<%= b.status_type != :error ? "success_row" : "" %>">
         <td><%= h(b.tag) %></td>
         <td class="center">
-          <a href="<%#= h(s.console_url(j.name)) %>">
+          <a href="<%= h(d.builds_url) %>">
             <span class="badge badge_<%= h(b.status_type) %>">
               <%= h(b.status_label) %>
             </span>

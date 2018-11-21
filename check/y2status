@@ -51,7 +51,11 @@ end
 
 module HTML
   def status_symbol(obj)
-    "<span class=\"#{obj.success? ? "success" : "failed"}_mark\"></span>"
+    if obj.success?
+      "<span class=\"badge_success\">✔</span>"
+    else
+      "<span class=\"badge_error\">✘</span>"
+    end
   end
 end
 
@@ -347,7 +351,15 @@ class DockerImage
     builds.all?{ |b| b.status != -1 }
   end
 
-  private
+  def url
+    "https://hub.docker.com/r/#{image}/"
+  end
+
+  def builds_url
+    "https://hub.docker.com/r/#{image}/builds/"
+  end
+
+private
 
   def docker_status_url
     "https://hub.docker.com/v2/repositories/#{image}/buildhistory/?page_size=250"

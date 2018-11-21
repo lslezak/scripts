@@ -36,6 +36,7 @@ Declined Submit Requests
 </a>
 </h4>
 
+<% unless p.declined_requests.empty? %>
 <table>
   <tbody>
     <% p.declined_requests.each do |r| %>
@@ -53,5 +54,6 @@ Declined Submit Requests
     <% end %>
   </tbody>
 </table>
+<% end %>
 
 <% end %>
