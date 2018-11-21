@@ -52,9 +52,9 @@ end
 module HTML
   def status_symbol(obj)
     if obj.success?
-      "<span class=\"badge_success\">✔</span>"
+      "<span class=\"color_success\">✔</span>"
     else
-      "<span class=\"badge_error\">✘</span>"
+      "<span class=\"color_error\">✘</span>"
     end
   end
 end
@@ -390,17 +390,13 @@ def render_erb(template, bind)
   include ERB::Util
   include HTML
 
-  file = File.join(__dir__, template)
+  file = File.join(__dir__, "views", template)
   renderer = ERB.new(File.read(file))
   renderer.filename = file
   renderer.result(bind)
 end
 
 ###################################################################################################
-
-template = "#{__dir__}/index.html.erb"
-renderer = ERB.new(File.read(template))
-renderer.filename = template
 
 jenkins_servers = [
   Jenkins.new("External Jenkins", "https://ci.opensuse.org/view/Yast")
@@ -437,9 +433,5 @@ end
 jenkins_partial = render_erb("_jenkins.html.erb", binding)
 docker_partial = render_erb("_docker.html.erb", binding)
 
-body = render_erb("_main.html.erb", binding)
-puts render_erb("index.html.erb", binding)
-
-exit 0
-
-
+body = render_erb("index.html.erb", binding)
+puts render_erb("layout.html.erb", binding)

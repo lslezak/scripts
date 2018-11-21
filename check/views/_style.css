@@ -83,6 +83,9 @@ td { padding: 5px 10px; }
 .badge_error  {background-color: red;}
 .badge_success  {background-color: green;}
 
+.color_error  {color: red;}
+.color_success  {color: green;}
+
 .success_row {display: none;}
 
 .docker_icon {
