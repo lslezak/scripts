@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-require "cgi"
 require "csv"
 require "erb"
 require "json"
@@ -59,7 +58,7 @@ module HTML
   end
 end
 
-class Jenkins
+class JenkinsServer
   include Downloader
   include Report
 
@@ -76,16 +75,6 @@ class Jenkins
 
   def jobs
     @jobs ||= download
-  end
-
-  # FIXME: move to JenkinsJob
-  def console_url(job)
-    "#{base_url}/job/#{job}/lastBuild/console"
-  end
-
-  # FIXME: move to JenkinsJob
-  def job_url(job)
-    "#{base_url}/job/#{job}"
   end
 
 private
@@ -105,17 +94,26 @@ private
 
     data = JSON.parse(body)
     data["jobs"].map do |s|
-      JenkinsJob.new(s["name"], s["color"])
+      JenkinsJob.new(self, s["name"], s["color"])
     end
   end
 end
 
 class JenkinsJob
-  attr_reader :name, :status
+  attr_reader :name, :status, :server
 
-  def initialize(name, status)
+  def initialize(server, name, status)
     @name = name
     @status = status
+    @server = server
+  end
+
+  def console_url
+    "#{server.base_url}/job/#{name}/lastBuild/console"
+  end
+
+  def job_url
+    "#{server.base_url}/job/#{name}"
   end
 
   def status_label
@@ -163,7 +161,7 @@ class ObsBuild
     when "succeeded"
       :success
     when "disabled", "excluded"
-      :info
+      :unknown
     else
       :unknown
     end
@@ -289,11 +287,6 @@ private
   end
 end
 
-def print_obs_header(project, api)
-  type = (api == "https://api.suse.de") ? "IBS" : "OBS"
-  print_header("#{type} #{project}", "#{obs_api_to_web(api)}/project/show/#{project}")
-end
-
 class DockerBuild
   attr_reader :tag, :status
 
@@ -310,12 +303,14 @@ class DockerBuild
     case status
     when -1
       "failed"
+    when -4
+      "canceled"
     when 10
       "success"
     when 0..9
       "building"
     else
-      "unknown"
+      "unknown (#{status})"
     end
   end
 
@@ -325,7 +320,7 @@ class DockerBuild
       :error
     when 10
       :success
-    when 0..9
+    when 0..9, -4
       :info
     else
       :unknown
@@ -399,12 +394,12 @@ end
 ###################################################################################################
 
 jenkins_servers = [
-  Jenkins.new("External Jenkins", "https://ci.opensuse.org/view/Yast")
+  JenkinsServer.new("External Jenkins", "https://ci.opensuse.org/view/Yast")
 ]
 
 if !Options.instance.public_only
   # internal Jenkins status
-  jenkins_servers << Jenkins.new("Internal Jenkins", "https://ci.suse.de/view/YaST")
+  jenkins_servers << JenkinsServer.new("Internal Jenkins", "https://ci.suse.de/view/YaST")
 end
 
 

@@ -1,8 +1,11 @@
 <% obs_projects.each do |p|%>
 
 <h3>
-<a href="<%= h(p.project_url) %>"><%= p.name %></a>
-<%= status_symbol(p) %>
+  <a href="<%= h(p.project_url) %>">
+    <%= (p.api == "https://api.suse.de") ? "IBS" : "OBS" %>
+    <%= p.name %>
+  </a>
+  <%= status_symbol(p) %>
 </h3>
 
 <h4 class="<%= p.builds? ? "success_row" : "" %>">
@@ -18,12 +21,12 @@ Build Results
         <td><%= h(b.package) %></td>
         <td><%= h(b.target) %></td>
         <td class="center">
-          <span class="badge badge_<%= h(b.status_type) %>">
-            <% path = (b.status == "failed") ? "package/live_build_log" : "package/show" %>
-            <a href="<%= h("#{p.web_url}/#{path}/#{p.name}/#{b.package}/#{b.status == "failed" ? target : ""}") %>">
+          <% path = (b.status == "failed") ? "package/live_build_log" : "package/show" %>
+          <a href="<%= h("#{p.web_url}/#{path}/#{p.name}/#{b.package}/#{b.status == "failed" ? target : ""}") %>">
+            <span class="badge badge_<%= h(b.status_type) %>">
               <%= h(b.status_label) %>
-            </a>
-          </span>
+            </span>
+          </a>
         </td>
       </tr>
     <% end %>
@@ -44,11 +47,11 @@ Declined Submit Requests
         <td><%= h(r.id) %></td>
         <td><%= h(r.details) %></td>
         <td class="center">
-          <span class="badge badge_error">
-            <a href="<%= h("#{p.web_url}/request/show/#{r.id}") %>">
+          <a href="<%= h("#{p.web_url}/request/show/#{r.id}") %>">
+            <span class="badge badge_error">
               declined
-            </a>
-          </span>
+            </span>
+          </a>
         </td>
       </tr>
     <% end %>
