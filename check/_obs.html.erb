@@ -25,7 +25,11 @@
   </tbody>
 </table>
 
-<h4 class="<%= !p.declined? ? "success_row" : "" %>">Declined Submit Requests</h4>
+<h4 class="<%= !p.declined? ? "success_row" : "" %>">
+<a href="<%= h("#{p.web_url}/project/requests/#{p.name}") %>">
+Declined Submit Requests
+</a>
+</h4>
 
 <table>
   <tbody>
