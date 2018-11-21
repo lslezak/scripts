@@ -1,0 +1,34 @@
+---
+- desc: Changes file check failed, missing Bugzilla or Fate ID
+  match: "^Stopping, missing new bugzilla or fate entry"
+  action: Add bugzilla/fate number to the *.changes file
+
+- desc: 'OBS "service in progress" error'
+  match: "^Server returned an error: HTTP Error 400: service in progress$"
+  action: Restart the job and submit the package manually
+
+- desc: RPM dependency problem
+  match: "^unresolvable: nothing provides"
+  action: Check the package dependencies, check the dependant package build status
+
+- desc: RPM package build failed
+  match: ^\\[\\s*[0-9]+s\\] .* failed "build .*\\.spec" at
+  action: Fix the package build
+
+- desc: RPM package build failed
+  match: RPM build errors
+  action: Fix the package build
+
+- desc: Missing Rakefile, job cannot be started
+  match: ^No Rakefile found
+  action: Add Rakefile or reconfigure the Jenkins job to use another tool
+
+- desc: OBS project or package was not found
+  match: ^Error getting meta for project
+  action: Check the target OBS project, create the package if it is missing
+
+- desc: Broken build root at the Jenkins worker node
+  match: Your build system is broken!!
+  action: Remove the broken /var/tmp/build-root-* directory at the Jenkins node
+    and then restart the build. Or simply restart the build, maybe it has been
+    fixed meanwhile...

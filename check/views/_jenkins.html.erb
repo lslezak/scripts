@@ -21,6 +21,22 @@
             </span>
           </a>
         </td>
+        <% if j.status_type == :error %>
+          <td>
+            <% if j.scanner.author %>
+              Author:
+              <img src="https://github.com/<%= h(j.scanner.author) %>.png?size=32" height="20">
+              <%= h(j.scanner.author) %>
+            <% end %>
+          </td>
+          <% errors, actions = j.scanner.analyze %>
+          <td>
+            <%= errors.map{|e| h(e)}.join("<br>") %>
+          </td>
+          <td>
+            <%= actions.map{|a| h(a)}.join("<br>") %>
+          </td>
+        <% end %>
       </tr>
     <% end %>
   </tbody>

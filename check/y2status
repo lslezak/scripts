@@ -8,6 +8,8 @@ require "shellwords"
 require "singleton"
 require "timeout"
 
+require_relative "jenkins_log_analyzer"
+
 # parse and store the command line options
 class Options
   include Singleton
@@ -41,6 +43,8 @@ module Report
 end
 
 module Downloader
+  include Report
+
   def download_url(url)
     print_progress("Downloading #{url}...")
     # -s silent, -L follow redirects
@@ -60,7 +64,6 @@ end
 
 class JenkinsServer
   include Downloader
-  include Report
 
   attr_reader :base_url, :label, :error
 
@@ -100,6 +103,8 @@ private
 end
 
 class JenkinsJob
+  include Downloader
+
   attr_reader :name, :status, :server
 
   def initialize(server, name, status)
@@ -114,6 +119,10 @@ class JenkinsJob
 
   def job_url
     "#{server.base_url}/job/#{name}"
+  end
+
+  def log_url
+    "#{server.base_url}/job/#{name}/lastBuild/consoleText"
   end
 
   def status_label
@@ -138,6 +147,17 @@ class JenkinsJob
     else
       :unknown
     end
+  end
+
+  def scanner
+    @scanner ||= create_scanner
+  end
+
+private
+
+  def create_scanner
+    log = download_url(log_url)
+    JenkinsLogAnalyzer.new(log)
   end
 end
 
