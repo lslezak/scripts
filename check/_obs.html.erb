@@ -5,7 +5,11 @@
 <%= status_symbol(p) %>
 </h3>
 
-<h4 class="<%= p.builds? ? "success_row" : "" %>">Build Results</h4>
+<h4 class="<%= p.builds? ? "success_row" : "" %>">
+<a href="<%= h("#{p.web_url}/project/monitor/#{p.name}") %>">
+Build Results
+</a>
+</h4>
 
 <table>
   <tbody>
@@ -15,7 +19,8 @@
         <td><%= h(b.target) %></td>
         <td class="center">
           <span class="badge badge_<%= h(b.status_type) %>">
-            <a href="<%= "FIXME" %>">
+            <% path = (b.status == "failed") ? "package/live_build_log" : "package/show" %>
+            <a href="<%= h("#{p.web_url}/#{path}/#{p.name}/#{b.package}/#{b.status == "failed" ? target : ""}") %>">
               <%= h(b.status_label) %>
             </a>
           </span>
@@ -39,7 +44,7 @@ Declined Submit Requests
         <td><%= h(r.details) %></td>
         <td class="center">
           <span class="badge badge_error">
-            <a href="<%= "FIXME" %>">
+            <a href="<%= h("#{p.web_url}/request/show/#{r.id}") %>">
               declined
             </a>
           </span>

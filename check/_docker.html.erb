@@ -11,11 +11,11 @@
       <tr class="<%= b.status_type != :error ? "success_row" : "" %>">
         <td><%= h(b.tag) %></td>
         <td class="center">
-          <span class="badge badge_<%= h(b.status_type) %>">
-            <a href="<%#= h(s.console_url(j.name)) %>">
-              <%= h(b.status_label) %></td>
-            </a>
-          </span>
+          <a href="<%#= h(s.console_url(j.name)) %>">
+            <span class="badge badge_<%= h(b.status_type) %>">
+              <%= h(b.status_label) %>
+            </span>
+          </a>
         </td>
       </tr>
     <% end %>

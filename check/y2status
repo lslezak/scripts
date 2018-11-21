@@ -74,8 +74,14 @@ class Jenkins
     @jobs ||= download
   end
 
+  # FIXME: move to JenkinsJob
   def console_url(job)
     "#{base_url}/job/#{job}/lastBuild/console"
+  end
+
+  # FIXME: move to JenkinsJob
+  def job_url(job)
+    "#{base_url}/job/#{job}"
   end
 
 private
@@ -279,61 +285,9 @@ private
   end
 end
 
-
-
 def print_obs_header(project, api)
   type = (api == "https://api.suse.de") ? "IBS" : "OBS"
   print_header("#{type} #{project}", "#{obs_api_to_web(api)}/project/show/#{project}")
-end
-
-def print_obs_request_header(project, api)
-  print_sub_header("Declined Submit Requests", "#{obs_api_to_web(api)}/project/requests/#{project}")
-end
-
-
-def print_declined_requests(project, api=nil)
-  print_obs_request_header(project, api)
-  declined = declined_requests(project, api)
-
-  declined.each do |num, name|
-    link = "#{obs_api_to_web(api)}/request/show/#{num}"
-    msg = sprintf("    %-7s  %-90s  %s", html_link(num, link), name, message("declined", :error, link))
-    print_line(msg, false)
-  end
-end
-
-def print_obs_status(project, api = nil)
-  print_obs_header(project, api)
-  print_sub_header("Build Results", "#{obs_api_to_web(api)}/project/monitor/#{project}")
-
-  table = get_obs_status(project, api)
-
-  table.each do |row|
-    row.each do |name, value|
-      # skip the name pair
-      next if name == "_"
-
-      package = row["_"]
-      target = name.sub(/\/[^\/]*$/, "")
-      msg = sprintf("    %-35s  %-30s  ", package, target)
-
-      path = (value == "failed") ? "package/live_build_log" : "package/show"
-      target = "" if value != "failed"
-      link = "#{obs_api_to_web(api)}/#{path}/#{project}/#{package}/#{target}"
-
-      msg << if value == "succeeded"
-               message(value, :success, link)
-             elsif ["failed", "broken", "unresolvable"].include?(value)
-               message(value, :error, link)
-             else
-               message(value, :unknown)
-      end
-
-      print_line(msg, !["failed", "broken", "unresolvable"].include?(value))
-    end
-  end
-
-  print_declined_requests(project, api)
 end
 
 class DockerBuild
@@ -426,7 +380,7 @@ def render_erb(template, bind)
 
   file = File.join(__dir__, template)
   renderer = ERB.new(File.read(file))
-  renderer.filename = template
+  renderer.filename = file
   renderer.result(bind)
 end
 
