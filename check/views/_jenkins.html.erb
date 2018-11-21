@@ -24,7 +24,6 @@
         <% if j.status_type == :error %>
           <td>
             <% if j.scanner.author %>
-              Author:
               <img src="https://github.com/<%= h(j.scanner.author) %>.png?size=32" height="20">
               <%= h(j.scanner.author) %>
             <% end %>

@@ -92,6 +92,8 @@ a:hover .badge {
 
 .success_row {display: none;}
 
+.indent { margin-left: 2em;}
+
 .docker_icon {
   background-color: #0061b5;
   padding: 5px;
