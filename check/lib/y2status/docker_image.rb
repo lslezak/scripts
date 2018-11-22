@@ -17,7 +17,7 @@ module Y2status
     end
 
     def success?
-      builds.all?{ |b| b.status != -1 }
+      builds.all? { |b| b.status != -1 }
     end
 
     def url

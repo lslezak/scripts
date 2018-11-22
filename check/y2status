@@ -20,13 +20,12 @@ end
 # an invalid options or the "--help" option is used
 Y2status::Options.instance
 
-
 jenkins_servers = [
   Y2status::JenkinsServer.new("External Jenkins", "https://ci.opensuse.org/view/Yast")
 ]
 
 # OBS
-obs_projects = ["YaST:Head", "YaST:SLE-15:GA", "YaST:SLE-12:SP4", "YaST:SLE-12:SP3" ].map do |p|
+obs_projects = ["YaST:Head", "YaST:SLE-15:GA", "YaST:SLE-12:SP4", "YaST:SLE-12:SP3"].map do |p|
   Y2status::ObsProject.new(p)
 end
 
@@ -36,8 +35,8 @@ if !Y2status::Options.instance.public_only
 
   # IBS
   obs_projects += ["Devel:YaST:CASP:4.0", "Devel:YaST:SLE-12-SP3", "Devel:YaST:SLE-12-SP4",
-    "Devel:YaST:SLE-15", "Devel:YaST:Head"].map do |p|
-      Y2status::ObsProject.new(p, "https://api.suse.de")
+                   "Devel:YaST:SLE-15", "Devel:YaST:Head"].map do |p|
+    Y2status::ObsProject.new(p, "https://api.suse.de")
   end
 end
 

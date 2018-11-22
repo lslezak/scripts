@@ -16,5 +16,4 @@ module Y2status
       renderer.result(erb_params.get_binding)
     end
   end
-
 end

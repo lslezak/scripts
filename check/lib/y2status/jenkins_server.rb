@@ -12,7 +12,7 @@ module Y2status
     end
 
     def success?
-      jobs.all?{ |j| j.status != "red"}
+      jobs.all? { |j| j.status != "red" }
     end
 
     def jobs

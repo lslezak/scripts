@@ -9,7 +9,7 @@ module Y2status
     def initialize(params)
       params.each do |key, value|
         singleton_class.send(:define_method, key) { value }
-      end 
+      end
     end
 
     def get_binding

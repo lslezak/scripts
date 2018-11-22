@@ -39,7 +39,7 @@ module Y2status
     end
 
     def builds?
-      !builds.any?{ |b| ["failed", "broken", "unresolvable"].include?(b.status) }
+      !builds.any? { |b| ["failed", "broken", "unresolvable"].include?(b.status) }
     end
 
     def declined?
@@ -106,7 +106,7 @@ module Y2status
 
       # the requests are separated by empty lines
       out.split("\n\n").each_with_object([]) do |r, list|
-        if r.match(/\A(\d+).*\n\s*(?:maintenance_incident|submit): (.*?)\n/m)
+        if r =~ /\A(\d+).*\n\s*(?:maintenance_incident|submit): (.*?)\n/m
           # remove repeated spaces by #squeeze
           list << ObsRequest.new(Regexp.last_match[1], Regexp.last_match[2].strip.squeeze(" "))
         end
