@@ -36,6 +36,7 @@ class JenkinsLogAnalyzer
 private
 
   def rules
+    # TODO: make the location configurable
     @rules ||= YAML.load_file(File.join(__dir__, "../../config/jenkins_rules.yml"))
   end
 end

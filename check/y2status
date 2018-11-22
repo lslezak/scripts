@@ -20,6 +20,8 @@ end
 # an invalid options or the "--help" option is used
 Y2status::Options.instance
 
+# TODO: load the projects from an YAML file
+# TODO: make the file location configurable
 jenkins_servers = [
   Y2status::JenkinsServer.new("External Jenkins", "https://ci.opensuse.org/view/Yast")
 ]
@@ -44,6 +46,7 @@ docker_images = ["yastdevel/ruby", "yastdevel/cpp", "yastdevel/libstorage-ng", "
   Y2status::DockerImage.new(i)
 end
 
+# TODO use the ErbRenderer also here
 obs_partial = render_erb("_obs.html.erb", binding)
 jenkins_partial = render_erb("_jenkins.html.erb", binding)
 docker_partial = render_erb("_docker.html.erb", binding)
