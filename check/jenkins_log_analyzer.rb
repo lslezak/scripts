@@ -29,7 +29,7 @@ class JenkinsLogAnalyzer
     @author = if log =~ /Started by GitHub push by (.*)$/
       Regexp.last_match[1]
     else
-      nil
+      ""
     end
   end
 

@@ -1,40 +1,20 @@
 #!/usr/bin/env ruby
 
+$LOAD_PATH.unshift(File.join(__dir__, "lib"))
+
 require "csv"
 require "erb"
 require "json"
-require "optparse"
 require "shellwords"
-require "singleton"
 require "timeout"
+
+require "y2status"
 
 require_relative "jenkins_log_analyzer"
 
-# parse and store the command line options
-class Options
-  include Singleton
-
-  attr_reader :verbose, :public_only
-
-  def initialize
-    OptionParser.new do |opts|
-      opts.banner = "Usage: #{$PROGRAM_NAME} [options]"
-
-      opts.on("-p", "--public", "Query only the public services (default: false)") do |p|
-        @public_only = p
-      end
-
-      opts.on("-v", "--[no-]verbose", "Run verbosely (default: false)") do |v|
-        @verbose = v
-      end
-
-    end.parse!
-  end
-end
-
 module Report
   def print_progress(msg)
-    $stderr.puts(msg) if Options.instance.verbose
+    $stderr.puts(msg) if Y2status::Options.instance.verbose
   end
 
   def print_error(msg)
@@ -307,100 +287,6 @@ private
   end
 end
 
-class DockerBuild
-  attr_reader :tag, :status
-
-  def initialize(tag, status)
-    @tag = tag
-    @status = status
-  end
-
-  def status_label
-    # "status" values:
-    #     -1 = failed
-    #   0..9 = building
-    #     10 = success
-    case status
-    when -1
-      "failed"
-    when -4
-      "canceled"
-    when 10
-      "success"
-    when 0..9
-      "building"
-    else
-      "unknown (#{status})"
-    end
-  end
-
-  def status_type
-    case status
-    when -1
-      :error
-    when 10
-      :success
-    when 0..9, -4
-      :info
-    else
-      :unknown
-    end
-  end
-end
-
-class DockerImage
-  include Downloader
-  include Report
-
-  attr_reader :image, :error
-
-  def initialize(image)
-    @image = image
-  end
-
-  def builds
-    @builds ||= download
-  end
-
-  def success?
-    builds.all?{ |b| b.status != -1 }
-  end
-
-  def url
-    "https://hub.docker.com/r/#{image}/"
-  end
-
-  def builds_url
-    "https://hub.docker.com/r/#{image}/builds/"
-  end
-
-private
-
-  def docker_status_url
-    "https://hub.docker.com/v2/repositories/#{image}/buildhistory/?page_size=250"
-  end
-
-  def download
-    body = download_url(docker_status_url)
-
-    if body.empty?
-      @error = "Cannot download the build status"
-      print_error(error)
-      return []
-    end
-
-    status = JSON.parse(body)
-
-    # remove the duplicates, we need just the latest result for each tag
-    results = status["results"]
-    results.uniq! { |r| r["dockertag_name"] }
-
-    results.map do |r|
-      DockerBuild.new(r["dockertag_name"], r["status"])
-    end
-  end
-end
-
 def render_erb(template, bind)
   include ERB::Util
   include HTML
@@ -417,7 +303,7 @@ jenkins_servers = [
   JenkinsServer.new("External Jenkins", "https://ci.opensuse.org/view/Yast")
 ]
 
-if !Options.instance.public_only
+if !Y2status::Options.instance.public_only
   # internal Jenkins status
   jenkins_servers << JenkinsServer.new("Internal Jenkins", "https://ci.suse.de/view/YaST")
 end
@@ -431,7 +317,7 @@ end
 obs_partial = render_erb("_obs.html.erb", binding)
 
 # IBS
-if !Options.instance.public_only
+if !Y2status::Options.instance.public_only
   obs_projects = ["Devel:YaST:CASP:4.0", "Devel:YaST:SLE-12-SP3", "Devel:YaST:SLE-12-SP4",
     "Devel:YaST:SLE-15", "Devel:YaST:Head"].map do |p|
     ObsProject.new(p, "https://api.suse.de")
@@ -442,7 +328,7 @@ end
 
 
 docker_images = ["yastdevel/ruby", "yastdevel/cpp", "yastdevel/libstorage-ng", "libyui/devel"].map do |i|
-  DockerImage.new(i)
+  Y2status::DockerImage.new(i)
 end
 
 jenkins_partial = render_erb("_jenkins.html.erb", binding)
