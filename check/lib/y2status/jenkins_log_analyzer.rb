@@ -36,6 +36,6 @@ class JenkinsLogAnalyzer
 private
 
   def rules
-    @rules ||= YAML.load_file(File.join(__dir__, "jenkins_rules.yml"))
+    @rules ||= YAML.load_file(File.join(__dir__, "../../config/jenkins_rules.yml"))
   end
 end

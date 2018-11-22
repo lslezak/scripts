@@ -1,7 +1,5 @@
 
-require "y2status/docker_build"
-require "y2status/downloader"
-require "y2status/reporter"
+require "json"
 
 module Y2status
   class DockerImage

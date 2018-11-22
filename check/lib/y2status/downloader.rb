@@ -1,5 +1,4 @@
 
-require "y2status/reporter"
 require "shellwords"
 
 module Y2status

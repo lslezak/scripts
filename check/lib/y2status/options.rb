@@ -2,7 +2,6 @@
 require "optparse"
 require "singleton"
 
-
 # parse and store the command line options
 module Y2status
   class Options

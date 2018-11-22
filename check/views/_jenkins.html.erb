@@ -23,7 +23,7 @@
         </td>
         <% if j.status_type == :error %>
           <td>
-            <% if j.scanner.author %>
+            <% unless j.scanner.author.empty? %>
               <img src="https://github.com/<%= h(j.scanner.author) %>.png?size=32" height="20" class="vmiddle">
               <%= h(j.scanner.author) %>
             <% end %>

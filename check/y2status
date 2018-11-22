@@ -4,13 +4,10 @@ $LOAD_PATH.unshift(File.join(__dir__, "lib"))
 
 require "csv"
 require "erb"
-require "json"
 require "shellwords"
 require "timeout"
 
 require "y2status"
-
-require_relative "jenkins_log_analyzer"
 
 module Report
   def print_progress(msg)
@@ -39,105 +36,6 @@ module HTML
     else
       "<span class=\"color_error\">✘</span>"
     end
-  end
-end
-
-class JenkinsServer
-  include Downloader
-
-  attr_reader :base_url, :label, :error
-
-  def initialize(label, base_url)
-    @label = label
-    @base_url = base_url
-  end
-
-  def success?
-    jobs.all?{ |j| j.status != "red"}
-  end
-
-  def jobs
-    @jobs ||= download
-  end
-
-private
-
-  def status_url
-    "#{base_url}/api/json?pretty=true"
-  end
-
-  def download
-    body = download_url(status_url)
-
-    if body.empty?
-      @error = "Cannot download #{status_url}"
-      print_error(error)
-      return []
-    end
-
-    data = JSON.parse(body)
-    data["jobs"].map do |s|
-      JenkinsJob.new(self, s["name"], s["color"])
-    end
-  end
-end
-
-class JenkinsJob
-  include Downloader
-
-  attr_reader :name, :status, :server
-
-  def initialize(server, name, status)
-    @name = name
-    @status = status
-    @server = server
-  end
-
-  def console_url
-    "#{server.base_url}/job/#{name}/lastBuild/console"
-  end
-
-  def job_url
-    "#{server.base_url}/job/#{name}"
-  end
-
-  def log_url
-    "#{server.base_url}/job/#{name}/lastBuild/consoleText"
-  end
-
-  def status_label
-    case status
-    when "red"
-      "failed"
-    when "blue"
-      "success"
-    else
-      status
-    end
-  end
-
-  def status_type
-    case status
-    when "red"
-      :error
-    when "blue"
-      :success
-    when "disabled"
-      :info
-    else
-      :unknown
-    end
-  end
-
-  def scanner
-    @scanner ||= create_scanner
-  end
-
-private
-
-  def create_scanner
-    log = download_url(log_url)
-    JenkinsLogAnalyzer.new(log)
   end
 end
 
@@ -300,14 +198,13 @@ end
 ###################################################################################################
 
 jenkins_servers = [
-  JenkinsServer.new("External Jenkins", "https://ci.opensuse.org/view/Yast")
+  Y2status::JenkinsServer.new("External Jenkins", "https://ci.opensuse.org/view/Yast")
 ]
 
 if !Y2status::Options.instance.public_only
   # internal Jenkins status
-  jenkins_servers << JenkinsServer.new("Internal Jenkins", "https://ci.suse.de/view/YaST")
+  jenkins_servers << Y2status::JenkinsServer.new("Internal Jenkins", "https://ci.suse.de/view/YaST")
 end
-
 
 # OBS
 obs_projects = ["YaST:Head", "YaST:SLE-15:GA", "YaST:SLE-12:SP4", "YaST:SLE-12:SP3" ].map do |p|

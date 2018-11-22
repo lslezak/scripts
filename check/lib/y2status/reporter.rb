@@ -1,6 +1,4 @@
 
-#require "y2status/options"
-
 module Y2status
   module Reporter
     def print_progress(msg)
