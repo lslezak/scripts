@@ -22,6 +22,9 @@ module Y2status
         end
 
       end.parse!
+    rescue OptionParser::InvalidOption => e
+      $stderr.puts "Error: #{e.message}"
+      exit 1
     end
   end
 end

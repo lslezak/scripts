@@ -109,8 +109,12 @@ a:hover .badge {
 }
 
 footer {
-  color: #e0e0e0;
+  color: #bbbbbb;
   text-align: center;
   margin-top: 200px;
+  padding: 20px 0;
   font-size: small;
+}
+footer:hover {
+  color: black;
 }

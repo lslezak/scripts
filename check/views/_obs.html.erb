@@ -22,7 +22,7 @@ Build Results
         <td><%= h(b.target) %></td>
         <td class="center">
           <% path = (b.status == "failed") ? "package/live_build_log" : "package/show" %>
-          <a href="<%= h("#{p.web_url}/#{path}/#{p.name}/#{b.package}/#{b.status == "failed" ? target : ""}") %>">
+          <a href="<%= h("#{p.web_url}/#{path}/#{p.name}/#{b.package}/#{b.status == "failed" ? b.target : ""}") %>">
             <span class="badge badge_<%= h(b.status_type) %>">
               <%= h(b.status_label) %>
             </span>
