@@ -1,42 +1,43 @@
 
 require "yaml"
+module Y2status
+  class JenkinsLogAnalyzer
+    attr_reader :log
 
-class JenkinsLogAnalyzer
-  attr_reader :log
-
-  def initialize(log)
-    @log = log
-  end
-
-  def analyze
-    errors = []
-    actions = []
-
-    rules.each do |rule|
-      next unless log =~ Regexp.new(rule["match"])
-
-      errors << rule["desc"]
-      actions << rule["action"]
+    def initialize(log)
+      @log = log
     end
 
-    [errors, actions]
-  end
+    def analyze
+      errors = []
+      actions = []
 
-  # Note: use https://github.com/<author>.png?size=32 image in UI
-  def author
-    return @author if @author
+      rules.each do |rule|
+        next unless log =~ Regexp.new(rule["match"])
 
-    @author = if log =~ /Started by GitHub push by (.*)$/
-      Regexp.last_match[1]
-    else
-      ""
+        errors << rule["desc"]
+        actions << rule["action"]
+      end
+
+      [errors, actions]
     end
-  end
 
-private
+    # Note: use https://github.com/<author>.png?size=32 image in UI
+    def author
+      return @author if @author
 
-  def rules
-    # TODO: make the location configurable
-    @rules ||= YAML.load_file(File.join(__dir__, "../../config/jenkins_rules.yml"))
+      @author = if log =~ /Started by GitHub push by (.*)$/
+        Regexp.last_match[1]
+      else
+        ""
+      end
+    end
+
+  private
+
+    def rules
+      # TODO: make the location configurable
+      @rules ||= YAML.load_file(File.join(__dir__, "../../config/jenkins_rules.yml"))
+    end
   end
 end

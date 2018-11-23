@@ -20,33 +20,14 @@ end
 # an invalid options or the "--help" option is used
 Y2status::Options.instance
 
-# TODO: load the projects from an YAML file
-# TODO: make the file location configurable
-jenkins_servers = [
-  Y2status::JenkinsServer.new("External Jenkins", "https://ci.opensuse.org/view/Yast")
-]
+# TODO: make the config file location configurable
+config = Y2status::Config.new
 
-# OBS
-obs_projects = ["YaST:Head", "YaST:SLE-15:GA", "YaST:SLE-12:SP4", "YaST:SLE-12:SP3"].map do |p|
-  Y2status::ObsProject.new(p)
-end
+jenkins_servers = config.jenkins_servers
+obs_projects = config.obs_projects
+docker_images = config.docker_images
 
-if !Y2status::Options.instance.public_only
-  # internal Jenkins status
-  jenkins_servers << Y2status::JenkinsServer.new("Internal Jenkins", "https://ci.suse.de/view/YaST")
-
-  # IBS
-  obs_projects += ["Devel:YaST:CASP:4.0", "Devel:YaST:SLE-12-SP3", "Devel:YaST:SLE-12-SP4",
-                   "Devel:YaST:SLE-15", "Devel:YaST:Head"].map do |p|
-    Y2status::ObsProject.new(p, "https://api.suse.de")
-  end
-end
-
-docker_images = ["yastdevel/ruby", "yastdevel/cpp", "yastdevel/libstorage-ng", "libyui/devel"].map do |i|
-  Y2status::DockerImage.new(i)
-end
-
-# TODO use the ErbRenderer also here
+# TODO: use the ErbRenderer also here
 obs_partial = render_erb("_obs.html.erb", binding)
 jenkins_partial = render_erb("_jenkins.html.erb", binding)
 docker_partial = render_erb("_docker.html.erb", binding)

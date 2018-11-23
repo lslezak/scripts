@@ -1,0 +1,46 @@
+jenkins:
+  # Jenkins servers
+  - label: External Jenkins
+    url: https://ci.opensuse.org/view/Yast
+
+  - label: Internal Jenkins
+    url: https://ci.suse.de/view/YaST
+    public: false
+
+obs:
+  # OBS projects
+  - project: YaST:Head
+
+  - project: YaST:SLE-15:GA
+
+  - project: YaST:SLE-12:SP4
+
+  - project: YaST:SLE-12:SP3
+
+  # IBS projects
+  - project: Devel:YaST:Head
+    api: https://api.suse.de
+    public: false
+
+  - project: Devel:YaST:CASP:4.0
+    api: https://api.suse.de
+    public: false
+
+  - project: Devel:YaST:SLE-15
+    api: https://api.suse.de
+    public: false
+
+  - project: Devel:YaST:SLE-12-SP4
+    api: https://api.suse.de
+    public: false
+
+  - project: Devel:YaST:SLE-12-SP3
+    api: https://api.suse.de
+    public: false
+
+docker:
+  # Docker Hub images
+  - yastdevel/ruby
+  - yastdevel/cpp
+  - yastdevel/libstorage-ng
+  - libyui/devel
