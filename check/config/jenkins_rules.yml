@@ -1,4 +1,12 @@
----
+# This configuration file defines the rules for analyzing the Jenkins
+# log. This should help with idintifying the common problems
+# and suggest the solution.
+#
+# Each rule defines these keys:
+#  "desc"   - a short description displayed in the summary
+#  "match"  - a Ruby regular expression applied on the 
+#  "action" - suggested action to resolve the problem
+
 - desc: Changes file check failed, missing Bugzilla or Fate ID
   match: "^Stopping, missing new bugzilla or fate entry"
   action: Add bugzilla/fate number to the *.changes file
@@ -29,6 +37,6 @@
 
 - desc: Broken build root at the Jenkins worker node
   match: Your build system is broken!!
-  action: Remove the broken /var/tmp/build-root-* directory at the Jenkins node
+  action: Remove the broken /var/tmp/build-root directory at the Jenkins node
     and then restart the build. Or simply restart the build, maybe it has been
     fixed meanwhile...

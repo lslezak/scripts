@@ -1,4 +1,5 @@
 module Y2status
+  # Docker build result
   class DockerBuild
     attr_reader :tag, :status
 

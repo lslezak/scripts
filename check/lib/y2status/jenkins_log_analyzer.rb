@@ -1,6 +1,7 @@
 
 require "yaml"
 module Y2status
+  # Jenkins log analyzer
   class JenkinsLogAnalyzer
     attr_reader :log
 
@@ -8,6 +9,12 @@ module Y2status
       @log = log
     end
 
+    #
+    # Analyze the logs
+    #
+    # @return [Pair<Array<String>, Array<String>>] The pair containing list of errors
+    #  and list of suggested actions.
+    #
     def analyze
       errors = []
       actions = []
@@ -22,7 +29,12 @@ module Y2status
       [errors, actions]
     end
 
-    # Note: use https://github.com/<author>.png?size=32 image in UI
+    # Return the author of the related commit, works only
+    # when the job was started via the web hook. For builds started by
+    # the scheduler this information is not present.
+    #
+    # @return [String] The name or empty string if not found
+    # @note you can use https://github.com/<author>.png?size=32 image in the UI
     def author
       return @author if @author
 
@@ -36,7 +48,7 @@ module Y2status
   private
 
     def rules
-      # TODO: make the location configurable
+      # make the location configurable?
       @rules ||= YAML.load_file(File.join(__dir__, "../../config/jenkins_rules.yml"))
     end
   end

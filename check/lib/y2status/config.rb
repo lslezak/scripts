@@ -2,13 +2,24 @@
 require "yaml"
 
 module Y2status
+  # Class for reading the project config file
   class Config
     attr_reader :file
 
-    def initialize(file = File.join(__dir__, "../../config/config.yml"))
+    #
+    # Constructor
+    #
+    # @param file [String] Path to the config file
+    #
+    def initialize(file = Options.instance.config)
       @file = file
     end
 
+    #
+    # The loaded configuration
+    #
+    # @return [Hash] The parsed content of the configuration file
+    #
     def configuration
       @configuration ||= load_config
     end
@@ -36,7 +47,7 @@ module Y2status
   private
 
     def load_config
-      YAML.load_file(file)
+      YAML.safe_load(File.read(file))
     end
   end
 end

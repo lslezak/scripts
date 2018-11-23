@@ -1,3 +1,6 @@
+# This configuration files defines all projects scanned by
+# the y2status tool.
+
 jenkins:
   # Jenkins servers
   - label: External Jenkins

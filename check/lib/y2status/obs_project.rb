@@ -4,6 +4,7 @@ require "shellwords"
 require "timeout"
 
 module Y2status
+  # Open Build Service project
   class ObsProject
     include Downloader
     include Reporter

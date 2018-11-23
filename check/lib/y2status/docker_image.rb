@@ -2,6 +2,7 @@
 require "json"
 
 module Y2status
+  # Docker Hub image
   class DockerImage
     include Downloader
     include Reporter

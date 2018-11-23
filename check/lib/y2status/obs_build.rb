@@ -1,5 +1,6 @@
 
 module Y2status
+  # Open Build Service build result
   class ObsBuild
     attr_reader :package, :target, :status
 

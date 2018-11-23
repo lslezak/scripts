@@ -1,5 +1,6 @@
 
 module Y2status
+  # Jenkins server
   class JenkinsServer
     include Downloader
     include Reporter
