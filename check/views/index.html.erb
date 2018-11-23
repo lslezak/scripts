@@ -3,7 +3,7 @@
   Jenkins Status
 </h2>
 <div class="indent">
-<% renderer = Y2status::ErbRenderer.new("_jenkins.html.erb")%>
+<% renderer = Y2status::ErbRenderer.new("_jenkins.html.erb") %>
 <%= renderer.render(jenkins_servers: jenkins_servers) %>
 </div>
 
@@ -12,7 +12,7 @@
   Build Service Status
 </h2>
 <div class="indent">
-<% renderer = Y2status::ErbRenderer.new("_obs.html.erb")%>
+<% renderer = Y2status::ErbRenderer.new("_obs.html.erb") %>
 <%= renderer.render(obs_projects: obs_projects) %>
 </div>
 
@@ -21,6 +21,6 @@
   Docker Hub Status
 </h2>
 <div class="indent">
-<% renderer = Y2status::ErbRenderer.new("_docker.html.erb")%>
+<% renderer = Y2status::ErbRenderer.new("_docker.html.erb") %>
 <%= renderer.render(docker_images: docker_images) %>
 </div>

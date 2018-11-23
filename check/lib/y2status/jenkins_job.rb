@@ -1,5 +1,6 @@
 
 module Y2status
+  # Defines an Jenkins job instance
   class JenkinsJob
     include Downloader
 

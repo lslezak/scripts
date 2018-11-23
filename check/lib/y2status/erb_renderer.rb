@@ -13,7 +13,7 @@ module Y2status
       renderer = ERB.new(File.read(file))
       renderer.filename = file
       erb_params = ErbParams.new(params)
-      renderer.result(erb_params.get_binding)
+      renderer.result(erb_params.context)
     end
   end
 end

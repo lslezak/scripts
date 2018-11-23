@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(File.join(__dir__, "lib"))
 
 require "y2status"
 
-# force processing the command line options, this might exit if e.g.
+# process the command line options, this might exit if e.g.
 # an invalid option or the "--help" option is used
 options = Y2status::Options.instance
 

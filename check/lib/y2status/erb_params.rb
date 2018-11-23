@@ -12,7 +12,7 @@ module Y2status
       end
     end
 
-    def get_binding
+    def context
       binding
     end
   end

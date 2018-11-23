@@ -2,8 +2,8 @@
 require "optparse"
 require "singleton"
 
-# parse and store the command line options
 module Y2status
+  # parse and store the command line options
   class Options
     include Singleton
 
@@ -16,11 +16,13 @@ module Y2status
       OptionParser.new do |opts|
         opts.banner = "Usage: #{$PROGRAM_NAME} [options]"
 
-        opts.on("-c", "--config CONFIG_FILE", "Project configuration file (default: #{File.expand_path(config)})") do |c|
+        opts.on("-c", "--config CONFIG_FILE", "Project configuration file "\
+          "(default: #{File.expand_path(config)})") do |c|
           @config = c
         end
 
-        opts.on("-o", "--output HTML_FILE", "Save the generate HTML page to this file (default: STDOUT)") do |o|
+        opts.on("-o", "--output HTML_FILE", "Save the generated HTML page "\
+          "to file (default: STDOUT)") do |o|
           @output = o
         end
 
