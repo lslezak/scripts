@@ -31,7 +31,7 @@ module Y2status
   private
 
     def docker_status_url
-      "https://hub.docker.com/v2/repositories/#{image}/buildhistory/?page_size=250"
+      "https://hub.docker.com/v2/repositories/#{image}/buildhistory/?page_size=100"
     end
 
     def download

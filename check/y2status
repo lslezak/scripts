@@ -4,35 +4,28 @@ $LOAD_PATH.unshift(File.join(__dir__, "lib"))
 
 require "y2status"
 
-def render_erb(template, bind)
-  include ERB::Util
-  include Y2status::Helpers
-
-  file = File.join(__dir__, "views", template)
-  renderer = ERB.new(File.read(file))
-  renderer.filename = file
-  renderer.result(bind)
-end
-
-###################################################################################################
-
 # force processing the command line options, this might exit if e.g.
-# an invalid options or the "--help" option is used
-Y2status::Options.instance
+# an invalid option or the "--help" option is used
+options = Y2status::Options.instance
 
-# TODO: make the config file location configurable
+# load to projects configuration
 config = Y2status::Config.new
 
-jenkins_servers = config.jenkins_servers
-obs_projects = config.obs_projects
-docker_images = config.docker_images
+# render the plain index.html body
+page_renderer = Y2status::ErbRenderer.new("index.html.erb")
+body = page_renderer.render(
+  jenkins_servers: config.jenkins_servers,
+  obs_projects:    config.obs_projects,
+  docker_images:   config.docker_images
+)
 
-# TODO: use the ErbRenderer also here
-obs_partial = render_erb("_obs.html.erb", binding)
-jenkins_partial = render_erb("_jenkins.html.erb", binding)
-docker_partial = render_erb("_docker.html.erb", binding)
+# render the whole HTML page
+renderer = Y2status::ErbRenderer.new("layout.html.erb")
+html = renderer.render(body: body)
 
-page = render_erb("index.html.erb", binding)
-
-r = Y2status::ErbRenderer.new("layout.html.erb")
-puts r.render(body: page)
+if options.output && options.output != "-"
+  File.write(options.output, html)
+else
+  # print the result on STDOUT
+  puts html
+end
