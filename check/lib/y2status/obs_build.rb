@@ -13,6 +13,10 @@ module Y2status
       @status = status
     end
 
+    def failure?
+      ["failed", "broken", "unresolvable"].include?(status)
+    end
+
     def status_label
       status
     end

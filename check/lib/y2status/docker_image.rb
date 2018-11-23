@@ -18,7 +18,11 @@ module Y2status
     end
 
     def success?
-      builds.all? { |b| b.status != -1 }
+      !builds.any?(&:failure?)
+    end
+
+    def issues
+      builds.count(&:failure?)
     end
 
     def url

@@ -12,6 +12,10 @@ module Y2status
       @server = server
     end
 
+    def failure?
+      status == "red"
+    end
+
     def console_url
       "#{server.base_url}/job/#{name}/lastBuild/console"
     end

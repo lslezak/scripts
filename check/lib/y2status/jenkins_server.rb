@@ -13,7 +13,11 @@ module Y2status
     end
 
     def success?
-      jobs.all? { |j| j.status != "red" }
+      !jobs.any?(&:failure?)
+    end
+
+    def issues
+      jobs.count(&:failure?)
     end
 
     def jobs

@@ -8,6 +8,10 @@ module Y2status
       @status = status
     end
 
+    def failure?
+      status == -1
+    end
+
     def status_label
       # "status" values:
       #     -1 = failed

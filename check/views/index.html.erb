@@ -1,3 +1,22 @@
+<h1>
+  <img src="https://avatars3.githubusercontent.com/u/909990?s=60&amp;v=4" alt="YaST icon" height="30" class="vbottom">
+  YaST Status Overview
+</h1>
+<div class="indent">
+<% total_failures = (jenkins_servers + obs_projects + docker_images).map(&:issues).sum %>
+<% if total_failures.zero? %>
+  <span class="badge badge_success">
+    Wow! Everything is green!
+  </span>
+<% else %>
+  <span class="badge badge_error">
+    Total number of failures: <%= total_failures %>
+  </span>
+<% end %>
+</div>
+
+<br>
+
 <h2>
   <img src="https://ci.opensuse.org/static/059b3e24/images/headshot.png" alt="Jenkins icon" height="20">
   Jenkins Status

@@ -40,7 +40,7 @@ module Y2status
     end
 
     def builds?
-      !builds.any? { |b| ["failed", "broken", "unresolvable"].include?(b.status) }
+      !builds.any?(&:failure?)
     end
 
     def declined?
@@ -49,6 +49,10 @@ module Y2status
 
     def success?
       builds? && !declined?
+    end
+
+    def issues
+      builds.count(&:failure?) + declined_requests.size
     end
 
   private
