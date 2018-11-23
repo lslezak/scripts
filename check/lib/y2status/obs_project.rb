@@ -86,7 +86,7 @@ module Y2status
           package = row["_"]
           target = name.sub(/\/[^\/]*$/, "")
 
-          list << ObsBuild.new(package, target, status)
+          list << ObsBuild.new(self, package, target, status)
         end
       end
     end

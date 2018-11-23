@@ -1,0 +1,8 @@
+# This configuration file defines the specific rules for analyzing
+# the OBS logs.
+#
+# See more details in the generic_rules.yml file.
+
+- desc: The worker run out of the disk space 
+  match: No space left on device
+  action: Try restarting the build, if that does not help report the issue to the OBS team.

@@ -2,31 +2,10 @@
 require "yaml"
 module Y2status
   # Jenkins log analyzer
-  class JenkinsLogAnalyzer
-    attr_reader :log
+  class JenkinsLogAnalyzer < LogAnalyzer
 
     def initialize(log)
-      @log = log
-    end
-
-    #
-    # Analyze the logs
-    #
-    # @return [Pair<Array<String>, Array<String>>] The pair containing list of errors
-    #  and list of suggested actions.
-    #
-    def analyze
-      errors = []
-      actions = []
-
-      rules.each do |rule|
-        next unless log =~ Regexp.new(rule["match"])
-
-        errors << rule["desc"]
-        actions << rule["action"]
-      end
-
-      [errors, actions]
+      super
     end
 
     # Return the author of the related commit, works only
@@ -47,9 +26,8 @@ module Y2status
 
   private
 
-    def rules
-      # make the location configurable?
-      @rules ||= YAML.load_file(File.join(__dir__, "../../config/jenkins_rules.yml"))
+    def config_file
+      File.join(__dir__, "../../config/jenkins_rules.yml")
     end
   end
 end

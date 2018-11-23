@@ -26,14 +26,14 @@ module Y2status
 
     def jenkins_servers
       (configuration["jenkins"] || []).each_with_object([]) do |j, list|
-        next if Options.instance.public_only && j["public"] != false
+        next if Options.instance.public_only && j["internal"]
         list << JenkinsServer.new(j["label"], j["url"])
       end
     end
 
     def obs_projects
       (configuration["obs"] || []).each_with_object([]) do |o, list|
-        next if Options.instance.public_only && o["public"] != false
+        next if Options.instance.public_only && o["internal"]
         list << ObsProject.new(o["project"], o["api"])
       end
     end

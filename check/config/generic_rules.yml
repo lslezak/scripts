@@ -1,0 +1,21 @@
+# This configuration file defines the generic rules for analyzing the
+# logs. This should help with identifying the common problems
+# and suggest the solution.
+#
+# Each rule defines these keys:
+#  "desc"   - a short description displayed in the summary
+#  "match"  - a Ruby regular expression applied on the 
+#  "action" - suggested action to resolve the problem
+
+- desc: RPM package build failed
+  match: ^\\[\\s*[0-9]+s\\] .* failed "build .*\\.spec" at
+  action: Fix the package build
+
+- desc: RPM package build failed
+  match: RPM build errors
+  action: Fix the package build
+
+- desc: The RSpec unit test failed
+  # non-zero number of failures
+  match: ^\d+ examples, [1-9]+[0-9]* failure
+  action: Fix the RSpec unit test

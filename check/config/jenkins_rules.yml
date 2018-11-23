@@ -1,11 +1,7 @@
-# This configuration file defines the rules for analyzing the Jenkins
-# log. This should help with idintifying the common problems
-# and suggest the solution.
+# This configuration file defines the specific rules for analyzing
+# the Jenkins logs.
 #
-# Each rule defines these keys:
-#  "desc"   - a short description displayed in the summary
-#  "match"  - a Ruby regular expression applied on the 
-#  "action" - suggested action to resolve the problem
+# See more details in the generic_rules.yml file.
 
 - desc: Changes file check failed, missing Bugzilla or Fate ID
   match: "^Stopping, missing new bugzilla or fate entry"
@@ -19,13 +15,9 @@
   match: "^unresolvable: nothing provides"
   action: Check the package dependencies, check the dependant package build status
 
-- desc: RPM package build failed
-  match: ^\\[\\s*[0-9]+s\\] .* failed "build .*\\.spec" at
-  action: Fix the package build
-
-- desc: RPM package build failed
-  match: RPM build errors
-  action: Fix the package build
+- desc: The worker run out of the disk space 
+  match: No space left on device
+  action: Try restarting the build, if that does not help report the issue to the OBS team.
 
 - desc: Missing Rakefile, job cannot be started
   match: ^No Rakefile found

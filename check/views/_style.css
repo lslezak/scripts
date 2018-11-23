@@ -96,6 +96,11 @@ a:hover .badge {
 
 .indent { margin-left: 2em;}
 
+.hint {
+  color: #9e9e9e;
+  font-size: 85%;
+}
+
 .docker_icon {
   background-color: #0061b5;
   padding: 5px;

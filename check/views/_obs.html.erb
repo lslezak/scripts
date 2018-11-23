@@ -28,6 +28,12 @@ Build Results
             </span>
           </a>
         </td>
+        <% if b.status == "failed" %>
+          <% errors, actions = b.scanner.analyze %>
+          <td class="hint" title="<%= actions.map{|a| h(a)}.join("\n") %>">
+            <%= errors.map{|e| h(e)}.join("<br>") %>
+          </td>
+        <% end %>
       </tr>
     <% end %>
   </tbody>

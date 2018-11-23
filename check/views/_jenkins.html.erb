@@ -29,11 +29,8 @@
             <% end %>
           </td>
           <% errors, actions = j.scanner.analyze %>
-          <td>
+          <td class="hint" title="<%= actions.map{|a| h(a)}.join("\n") %>">
             <%= errors.map{|e| h(e)}.join("<br>") %>
-          </td>
-          <td>
-            <%= actions.map{|a| h(a)}.join("<br>") %>
           </td>
         <% end %>
       </tr>

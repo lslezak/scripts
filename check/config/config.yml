@@ -5,10 +5,10 @@ jenkins:
   # Jenkins servers
   - label: External Jenkins
     url: https://ci.opensuse.org/view/Yast
+    internal: true
 
   - label: Internal Jenkins
     url: https://ci.suse.de/view/YaST
-    public: false
 
 obs:
   # OBS projects
@@ -23,23 +23,23 @@ obs:
   # IBS projects
   - project: Devel:YaST:Head
     api: https://api.suse.de
-    public: false
+    internal: true
 
   - project: Devel:YaST:CASP:4.0
     api: https://api.suse.de
-    public: false
+    internal: true
 
   - project: Devel:YaST:SLE-15
     api: https://api.suse.de
-    public: false
+    internal: true
 
   - project: Devel:YaST:SLE-12-SP4
     api: https://api.suse.de
-    public: false
+    internal: true
 
   - project: Devel:YaST:SLE-12-SP3
     api: https://api.suse.de
-    public: false
+    internal: true
 
 docker:
   # Docker Hub images
