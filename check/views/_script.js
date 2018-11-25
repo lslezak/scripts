@@ -28,13 +28,23 @@ function new_items(old_array, new_array)
   return new_items;
 }
 
+function new_issues_text(count)
+{
+  var ret = count + " new issue";
+
+  if (count != 1)
+    ret = ret.concat("s");
+
+  return ret;
+}
+
 function create_notification(new_issues) {
   var options = {
     body: "TODO: details",
     icon: "https://avatars3.githubusercontent.com/u/909990?s=60&v=4"
   };
 
-  new Notification("Found " + new_issues.length + " new issues", options);
+  new Notification("Found " + new_issues_text(new_issues.length), options);
 }
 
 function notify(new_issues) {
@@ -53,6 +63,18 @@ function notify(new_issues) {
   }
 }
 
+function display_counter(num)
+{
+  if (num == 0)
+    return;
+
+  var counter = document.getElementById("new_issues_count");
+  counter.textContent = new_issues_text(num);
+  counter.classList.remove("hidden");
+}
+
+var highlighted = [];
+
 function receiveMessage(event)
 {
   var iframe = document.querySelectorAll("iframe")[0];
@@ -66,6 +88,8 @@ function receiveMessage(event)
   var current_ids = failure_ids(document);
   var loaded_ids = failure_ids(iframe.contentWindow.document.body);
   var new_ids = new_items(current_ids, loaded_ids);
+  // TODO: make list unique
+  highlighted = highlighted.concat(new_ids);
 
   var new_pg = document.querySelectorAll("iframe")[0].contentWindow.document.getElementById("page");
 
@@ -79,9 +103,11 @@ function receiveMessage(event)
   // TODO: register again the filter button handler
 
   // highlight the new failures
-  new_ids.forEach( (id) => {
+  highlighted.forEach( (id) => {
     document.getElementById(id).className += " highlight";
   });
+
+  display_counter(highlighted.length)
 
   // report the new failures via HTML5 notifications
   notify(new_ids);
