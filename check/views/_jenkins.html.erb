@@ -5,10 +5,16 @@
 <%= status_symbol(s) %>
 </h3>
 
+<%# TODO: error handling %>
+
 <table>
   <tbody>
     <% s.jobs.each do |j| %>
-      <tr class="<%= j.status_type != :error ? "success_row" : "" %>">
+      <% if j.status_type == :error %>
+        <tr id="failure_id:<%= h(j.issue_id) %>">
+      <% else %>
+        <tr class="success_row">
+      <% end %>
         <td>
           <a href="<%= h(j.job_url) %>">
             <%= h(j.name) %>

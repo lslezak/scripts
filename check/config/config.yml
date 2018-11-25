@@ -5,10 +5,10 @@ jenkins:
   # Jenkins servers
   - label: External Jenkins
     url: https://ci.opensuse.org/view/Yast
-    internal: true
 
   - label: Internal Jenkins
     url: https://ci.suse.de/view/YaST
+    internal: true
 
 obs:
   # OBS projects

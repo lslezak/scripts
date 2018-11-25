@@ -17,6 +17,10 @@ module Y2status
       ["failed", "broken", "unresolvable"].include?(status)
     end
 
+    def issue_id
+      "obs_build:#{project.api}_#{project.name}_#{package}_#{target}"
+    end
+
     def status_label
       status
     end

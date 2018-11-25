@@ -55,7 +55,7 @@ module Y2status
       results.uniq! { |r| r["dockertag_name"] }
 
       results.map do |r|
-        DockerBuild.new(r["dockertag_name"], r["status"])
+        DockerBuild.new(self, r["dockertag_name"], r["status"])
       end
     end
   end

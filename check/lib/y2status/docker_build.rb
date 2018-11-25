@@ -1,11 +1,16 @@
 module Y2status
   # Docker build result
   class DockerBuild
-    attr_reader :tag, :status
+    attr_reader :image, :tag, :status
 
-    def initialize(tag, status)
+    def initialize(image, tag, status)
+      @image = image
       @tag = tag
       @status = status
+    end
+
+    def issue_id
+      "docker:#{image.image}:#{tag}"
     end
 
     def failure?

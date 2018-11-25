@@ -15,15 +15,17 @@
 </head>
 
 <body>
-  <div id="filter">
-    <label><input id="show_all" type="checkbox" checked="checked"/> Display Only Failures</label>
-    <%# TODO: outdated page notification %>
+  <div id="page">
+    <div id="filter">
+      <label><input id="show_all" type="checkbox" checked="checked"/> Display Only Failures</label>
+      <%# TODO: outdated page notification %>
+    </div>
+
+    <%= body %>
+
+    <footer>
+      Generated at <%= Time.now.strftime("%c %Z") %>
+    </footer>
   </div>
-
-  <%= body %>
-
-  <footer data-utc-time-stamp="<%= Time.now.utc.to_i %>">
-    Generated at <%= Time.now.strftime("%c %Z") %>
-  </footer>
 </body>
 </html>

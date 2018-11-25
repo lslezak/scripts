@@ -28,6 +28,10 @@ module Y2status
       "#{server.base_url}/job/#{name}/lastBuild/consoleText"
     end
 
+    def issue_id
+      "jenkins:#{server.base_url}_#{name}"
+    end
+
     def status_label
       case status
       when "red"

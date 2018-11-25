@@ -113,7 +113,7 @@ module Y2status
       out.split("\n\n").each_with_object([]) do |r, list|
         if r =~ /\A(\d+).*\n\s*(?:maintenance_incident|submit): (.*?)\n/m
           # remove repeated spaces by #squeeze
-          list << ObsRequest.new(Regexp.last_match[1], Regexp.last_match[2].strip.squeeze(" "))
+          list << ObsRequest.new(self, Regexp.last_match[1], Regexp.last_match[2].strip.squeeze(" "))
         end
       end
     end
