@@ -28,6 +28,31 @@ function new_items(old_array, new_array)
   return new_items;
 }
 
+function create_notification(new_issues) {
+  var options = {
+    body: "TODO: details",
+    icon: "https://avatars3.githubusercontent.com/u/909990?s=60&v=4"
+  };
+
+  new Notification("Found " + new_issues.length + " new issues", options);
+}
+
+function notify(new_issues) {
+  if (new_issues.length == 0)
+    return;
+
+  if (Notification.permission === "granted") {
+    create_notification(new_issues);
+  }
+  else if (Notification.permission !== "denied") {
+    Notification.requestPermission().then(function (permission) {
+      if (permission === "granted") {
+        create_notification(new_issues);
+      }
+    });
+  }
+}
+
 function receiveMessage(event)
 {
   var iframe = document.querySelectorAll("iframe")[0];
@@ -58,7 +83,8 @@ function receiveMessage(event)
     document.getElementById(id).className += " highlight";
   });
 
-  // TODO: report the new failures via HTML5 notifications
+  // report the new failures via HTML5 notifications
+  notify(new_ids);
 }
 
 window.addEventListener("message", receiveMessage, false);
