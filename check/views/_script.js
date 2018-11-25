@@ -73,14 +73,36 @@ function display_counter(num)
   counter.classList.remove("hidden");
 }
 
+function move_new_page(iframe)
+{
+  var new_pg = document.querySelectorAll("iframe")[0].contentWindow.document.getElementById("page");
+
+  // remove the iframe and the old page
+  document.body.removeChild(iframe);
+  document.body.removeChild(document.getElementById("page"));
+  // add the new content
+  document.body.appendChild(new_pg);
+}
+
 var highlighted = [];
+
+function hightlight()
+{
+  // highlight the new failures
+  highlighted.forEach( (id) => {
+    var node = document.getElementById(id);
+
+    if (node != null)
+      node.className += " highlight";
+  });
+
+  display_counter(document.querySelectorAll("tr.highlight").length)
+}
 
 function receiveMessage(event)
 {
   var iframe = document.querySelectorAll("iframe")[0];
-  // TODO: what if no iframe?
-
-  if (iframe.contentWindow != event.source)
+  if (iframe == null || iframe.contentWindow != event.source)
     return;
 
   console.log("Received message:", event.data);
@@ -88,26 +110,17 @@ function receiveMessage(event)
   var current_ids = failure_ids(document);
   var loaded_ids = failure_ids(iframe.contentWindow.document.body);
   var new_ids = new_items(current_ids, loaded_ids);
-  // TODO: make list unique
-  highlighted = highlighted.concat(new_ids);
+  // add to highlighted if not already there
+  new_ids.forEach((item) => {
+    if (highlighted.indexOf(item) < 0)
+      highlighted.push(item);
+  });
 
-  var new_pg = document.querySelectorAll("iframe")[0].contentWindow.document.getElementById("page");
-
-  // remove the iframe and the old page
-  document.body.removeChild(iframe);
-  document.body.removeChild(document.getElementById("page"));
-
-  // add the new content
-  document.body.appendChild(new_pg);
+  move_new_page(iframe);
 
   // TODO: register again the filter button handler
 
-  // highlight the new failures
-  highlighted.forEach( (id) => {
-    document.getElementById(id).className += " highlight";
-  });
-
-  display_counter(highlighted.length)
+  hightlight();
 
   // report the new failures via HTML5 notifications
   notify(new_ids);

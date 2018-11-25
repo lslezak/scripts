@@ -23,7 +23,7 @@ td { padding: 5px 10px; }
 .vbottom { vertical-align: bottom; }
 
 .badge  {border-radius: 3px; padding: 3px 6px;
-  text-decoration: none; color: white;
+  text-decoration: none;
   background-color: #808080;
 }
 

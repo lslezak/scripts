@@ -10,11 +10,11 @@
   </span>
 <% else %>
   <span class="badge badge_error">
-    Total number of issues: <%= total_failures %>
+    <%= total_failures %> <%= total_failures == 1 ? "issue" : "issues" %> in total
   </span>
 <% end %>
 
-  <span id="new_issues_count" class="badge badge_warning hidden"></span>
+  <span id="new_issues_count" class="badge highlight hidden"></span>
 </div>
 
 <br>
