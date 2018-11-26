@@ -125,7 +125,7 @@ function move_new_page(iframe)
 
 var highlighted = [];
 
-function hightlight()
+function highlight()
 {
   // highlight the new failures
   highlighted.forEach( (id) => {
@@ -159,7 +159,8 @@ function receiveMessage(event)
   var orig_filter_value = document.getElementById('show_all').checked;
   move_new_page(iframe);
   bind_filter_button();
-  hightlight();
+  highlight();
+  bind_highlighted_items();
   document.getElementById('show_all').checked = orig_filter_value;
   run_display_filter(document.getElementById('show_all').checked);
 
@@ -173,6 +174,15 @@ function run_display_filter(only_failures)
 {
   var style = only_failures ? "none" : "table-row";
   document.querySelectorAll('.success_row').forEach(e => e.style.display = style);
+}
+
+function bind_highlighted_items()
+{
+  document.querySelectorAll('tr.highlight').forEach(n =>
+    n.addEventListener('click', (event) => {
+      console.log("Clicked", event.target);
+      // TODO: remove "highlight" class, remove from "highlighted" list
+  }));
 }
 
 function bind_filter_button()
