@@ -38,9 +38,48 @@ function new_issues_text(count)
   return ret;
 }
 
+function amount_str(count, str)
+{
+  var ret = count + " " + str;
+  if (count != 1)
+    ret += "s";
+
+  return ret;
+}
+
 function create_notification(new_issues) {
+  var jenkins_failures = 0;
+  var obs_failures = 0;
+  var obs_declined_sr = 0;
+  var docker_failures = 0;
+
+  new_issues.forEach( (id) => {
+    console.log(id);
+    if (id.match(/^failure_id:jenkins:/))
+      jenkins_failures++;
+    else if (id.match(/^failure_id:obs_build:/))
+      obs_failures++;
+    else if (id.match(/^failure_id:declined_sr:/))
+      obs_declined_sr++;
+    else if (id.match(/^failure_id:docker:/))
+      docker_failures++;
+    else
+      console.warn("Unknown issue id: ", id);
+  });
+
+  var message = "";
+
+  if (jenkins_failures > 0)
+    message += amount_str(jenkins_failures, "new Jenkins build failure") + "\n";
+  if (obs_failures > 0)
+    message += amount_str(obs_failures, "new OBS build failure") + "\n";
+  if (obs_declined_sr > 0)
+    message += amount_str(obs_declined_sr, "new declined OBS submit request") + "\n";
+  if (docker_failures > 0)
+    message += amount_str(docker_failures, "new Docker build failure") + "\n";
+
   var options = {
-    body: "TODO: details",
+    body: message,
     icon: "https://avatars3.githubusercontent.com/u/909990?s=60&v=4"
   };
 
@@ -115,12 +154,14 @@ function receiveMessage(event)
     if (highlighted.indexOf(item) < 0)
       highlighted.push(item);
   });
+  console.log("New issues: ", new_ids.length);
 
+  var orig_filter_value = document.getElementById('show_all').checked;
   move_new_page(iframe);
-
-  // TODO: register again the filter button handler
-
+  bind_filter_button();
   hightlight();
+  document.getElementById('show_all').checked = orig_filter_value;
+  run_display_filter(document.getElementById('show_all').checked);
 
   // report the new failures via HTML5 notifications
   notify(new_ids);
@@ -128,12 +169,22 @@ function receiveMessage(event)
 
 window.addEventListener("message", receiveMessage, false);
 
-window.onload = function() {
+function run_display_filter(only_failures)
+{
+  var style = only_failures ? "none" : "table-row";
+  document.querySelectorAll('.success_row').forEach(e => e.style.display = style);
+}
+
+function bind_filter_button()
+{
   // handle changing the "Filter" check box value
   document.getElementById('show_all').addEventListener('change', (event) => {
-    var style = event.target.checked ? "none" : "table-row";
-    document.querySelectorAll('.success_row').forEach(e => e.style.display = style);
+    run_display_filter(event.target.checked);
   });
+}
+
+window.onload = function() {
+  bind_filter_button();
 
   if (window != window.parent)
   {
