@@ -28,17 +28,17 @@ td { padding: 5px 10px; }
 }
 
 a .badge {
-  text-decoration: none; color: white;
+  text-decoration: none;
 }
 a:hover .badge {
   text-decoration: underline;
 }
 
-.badge_success {background-color: green;}
-.badge_info {background-color: #0061b5;}
-.badge_warning {background-color: #ff8c3f;}
-.badge_error  {background-color: red;}
-.badge_unknown {background-color: #9e9e9e;}
+.badge_success  {color: white; background-color: green;}
+.badge_info     {color: white; background-color: #0061b5;}
+.badge_warning  {color: white; background-color: #ff8c3f;}
+.badge_error    {color: white; background-color: red;}
+.badge_unknown  {color: white; background-color: #9e9e9e;}
 
 .color_error  {color: red;}
 .color_success  {color: green;}
@@ -57,7 +57,6 @@ a:hover .badge {
   background-color: #fff3bc;
   border: #ffaeae 1px dotted;
 }
-
 .highlight:hover {
   background-color: #fde88c;
 }
