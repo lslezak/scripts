@@ -57,7 +57,7 @@ Declined Submit Requests
 <table>
   <tbody>
     <% p.declined_requests.each do |r| %>
-      <tr id="failure_id:<%= h(r.issue_id) %> >
+      <tr id="failure_id:<%= h(r.issue_id) %>" >
         <td><%= h(r.id) %></td>
         <td><%= h(r.details) %></td>
         <td class="center">
