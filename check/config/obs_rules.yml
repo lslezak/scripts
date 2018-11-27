@@ -6,3 +6,7 @@
 - desc: The worker run out of the disk space 
   match: No space left on device
   action: Try restarting the build, if that does not help report the issue to the OBS team.
+
+- desc: Broken worker configuration
+  match: Failed to allocate KVM HPT
+  action: Try restarting the build, if that does not help report the issue to the OBS team.
