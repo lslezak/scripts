@@ -4,6 +4,8 @@ $LOAD_PATH.unshift(File.join(__dir__, "lib"))
 
 require "y2status"
 
+include Y2status::Reporter
+
 # process the command line options, this might exit if e.g.
 # an invalid option or the "--help" option is used
 options = Y2status::Options.instance
@@ -25,6 +27,7 @@ html = renderer.render(body: body)
 
 if options.output && options.output != "-"
   File.write(options.output, html)
+  print_progress("Saved to #{options.output}")
 else
   # print the result on STDOUT
   puts html

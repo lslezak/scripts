@@ -104,12 +104,17 @@ function notify(new_issues) {
 
 function display_counter(num)
 {
-  if (num == 0)
-    return;
-
   var counter = document.getElementById("new_issues_count");
-  counter.textContent = new_issues_text(num);
-  counter.classList.remove("hidden");
+
+  if (num == 0)
+  {
+    counter.classList.add("hidden");
+  }
+  else
+  {
+    counter.textContent = new_issues_text(num);
+    counter.classList.remove("hidden");
+  }
 }
 
 function move_new_page(iframe)
@@ -130,9 +135,8 @@ function highlight()
   // highlight the new failures
   highlighted.forEach( (id) => {
     var node = document.getElementById(id);
-
     if (node != null)
-      node.className += " highlight";
+      node.classList.add("highlight");
   });
 
   display_counter(document.querySelectorAll("tr.highlight").length)
@@ -188,8 +192,12 @@ function bind_highlighted_items()
 {
   document.querySelectorAll('tr.highlight').forEach(n =>
     n.addEventListener('click', (event) => {
-      console.log("Clicked", event.target);
-      // TODO: remove "highlight" class, remove from "highlighted" list
+      console.debug("Clicked", event.target);
+      var tr = event.target.parentNode;
+      tr.classList.remove("highlight");
+      highlighted = highlighted.filter(item => item !== tr.id)
+
+      display_counter(document.querySelectorAll("tr.highlight").length)
   }));
 }
 
