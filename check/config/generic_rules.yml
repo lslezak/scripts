@@ -19,3 +19,7 @@
   # non-zero number of failures
   match: ^\d+ examples, [1-9]+[0-9]* failure
   action: Fix the RSpec unit test
+
+- desc: Compilation failed
+  match: compilation terminated
+  action: Fix the package build
