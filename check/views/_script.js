@@ -138,6 +138,13 @@ function highlight()
   display_counter(document.querySelectorAll("tr.highlight").length)
 }
 
+function add_blank_target()
+{
+  document.querySelectorAll("a").forEach((a) => {
+    a.setAttribute('target', '_blank');
+  });
+}
+
 function receiveMessage(event)
 {
   var iframe = document.querySelectorAll("iframe")[0];
@@ -159,6 +166,7 @@ function receiveMessage(event)
   var orig_filter_value = document.getElementById('show_all').checked;
   move_new_page(iframe);
   bind_filter_button();
+  add_blank_target();
   highlight();
   bind_highlighted_items();
   document.getElementById('show_all').checked = orig_filter_value;
@@ -195,6 +203,7 @@ function bind_filter_button()
 
 window.onload = function() {
   bind_filter_button();
+  add_blank_target();
 
   if (window != window.parent)
   {
