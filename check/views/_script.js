@@ -1,8 +1,11 @@
 
 "use strict";
 
+// remember the new highlighted items, highlight them again after page update
+var highlighted = [];
+
 // load the same page into an iframe
-function update_page()
+function load_new_page()
 {
   var iframe = document.createElement('iframe');
   iframe.style.display = "none";
@@ -128,7 +131,6 @@ function move_new_page(iframe)
   document.body.appendChild(new_pg);
 }
 
-var highlighted = [];
 
 function highlight()
 {
@@ -149,13 +151,25 @@ function add_blank_target()
   });
 }
 
+function update_page(iframe)
+{
+  var orig_filter_value = document.getElementById('show_all').checked;
+  move_new_page(iframe);
+  bind_filter_button();
+  add_blank_target();
+  highlight();
+  bind_highlighted_items();
+  document.getElementById('show_all').checked = orig_filter_value;
+  run_display_filter(document.getElementById('show_all').checked);
+}
+
 function receiveMessage(event)
 {
   var iframe = document.querySelectorAll("iframe")[0];
   if (iframe == null || iframe.contentWindow != event.source)
     return;
 
-  console.log("Received message:", event.data);
+  console.log(new Date().toLocaleTimeString(), event.data);
 
   var current_ids = failure_ids(document);
   var loaded_ids = failure_ids(iframe.contentWindow.document.body);
@@ -167,14 +181,7 @@ function receiveMessage(event)
   });
   console.log("New issues: ", new_ids.length);
 
-  var orig_filter_value = document.getElementById('show_all').checked;
-  move_new_page(iframe);
-  bind_filter_button();
-  add_blank_target();
-  highlight();
-  bind_highlighted_items();
-  document.getElementById('show_all').checked = orig_filter_value;
-  run_display_filter(document.getElementById('show_all').checked);
+  update_page(iframe);
 
   // report the new failures via HTML5 notifications
   notify(new_ids);
@@ -219,5 +226,5 @@ window.onload = function() {
   }
 
   // check the new issues every 5 minutes
-  window.setInterval(update_page, 5*60*1000);
+  window.setInterval(load_new_page, 5*60*1000);
 };
