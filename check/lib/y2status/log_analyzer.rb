@@ -36,7 +36,7 @@ module Y2status
     end
 
     def generic_rules
-      File.join(__dir__, "../../config/generic_rules.yml")
+      File.join(__dir__, "../../config/generic_errors.yml")
     end
   end
 end

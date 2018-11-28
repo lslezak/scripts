@@ -27,7 +27,7 @@ module Y2status
   private
 
     def config_file
-      File.join(__dir__, "../../config/jenkins_rules.yml")
+      File.join(__dir__, "../../config/jenkins_errors.yml")
     end
   end
 end
