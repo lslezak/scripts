@@ -4,7 +4,7 @@
 #
 # Each rule defines these keys:
 #  "desc"   - a short description displayed in the summary
-#  "match"  - a Ruby regular expression applied on the 
+#  "match"  - a Ruby regular expression applied on the
 #  "action" - suggested action to resolve the problem
 
 - desc: RPM package build failed
@@ -23,3 +23,11 @@
 - desc: Compilation failed
   match: compilation terminated
   action: Fix the package build
+
+- desc: Not packaged directory
+  match: ".rpm: directories not owned by a package:$"
+  action: Fix the RPM *.spec file
+
+- desc: RPM file conflict
+  match: file .* conflicts between attempted installs of .* and .*
+  action: Check the package dependencies and the content of the packages
