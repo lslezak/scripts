@@ -161,6 +161,7 @@ function update_page(iframe)
   bind_highlighted_items();
   document.getElementById('show_all').checked = orig_filter_value;
   run_display_filter(document.getElementById('show_all').checked);
+  add_local_time();
 }
 
 function receiveMessage(event)
@@ -216,9 +217,20 @@ function bind_filter_button()
   });
 }
 
+function add_local_time()
+{
+  var footer = document.getElementById('footer');
+  var timestamp = parseInt(footer.dataset.timestamp);
+  var local_date = new Date(0);
+  local_date.setUTCSeconds(timestamp);
+
+  footer.setAttribute("title", local_date.toTimeString());
+}
+
 window.onload = function() {
   bind_filter_button();
   add_blank_target();
+  add_local_time();
 
   if (window != window.parent)
   {

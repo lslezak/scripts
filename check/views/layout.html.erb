@@ -23,7 +23,7 @@
 
     <%= body %>
 
-    <footer>
+    <footer id="footer" data-timestamp="<%= Time.now.utc.to_i %>">
       Generated at <%= Time.now.strftime("%c %Z") %>
     </footer>
   </div>
