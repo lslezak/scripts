@@ -10,8 +10,7 @@ module Y2status
     # @return [String] HTMl text
     #
     def status_symbol(obj)
-      return "" if obj.respond_to?(:error?) && obj.error?
-      return "❓" unless obj.respond_to?(:success?)
+      return "" if obj.error?
 
       if obj.success?
         "<span class=\"color_success\">✔</span>"

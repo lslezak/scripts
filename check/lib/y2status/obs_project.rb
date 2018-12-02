@@ -47,6 +47,10 @@ module Y2status
       !declined_requests.empty?
     end
 
+    def error?
+      error_status? || error_requests?
+    end
+
     def error_status?
       error_status && !error_status.empty?
     end
