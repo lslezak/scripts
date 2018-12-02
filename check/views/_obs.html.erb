@@ -18,36 +18,36 @@ Build Results
   <span class="badge badge_error">
     Error: <%= h(p.error_status) %>
   </span>
-<% end %>
-
-<table>
-  <tbody>
-    <% p.builds.each do |b| %>
-      <% if b.status_type == :error %>
-        <tr id="failure_id:<%= h(b.issue_id) %>">
-      <% else %>
-        <tr class="success_row">
-      <% end %>
-        <td><%= h(b.package) %></td>
-        <td><%= h(b.target) %></td>
-        <td class="center">
-          <% path = (b.status == "failed") ? "package/live_build_log" : "package/show" %>
-          <a href="<%= h("#{p.web_url}/#{path}/#{p.name}/#{b.package}/#{b.status == "failed" ? b.target : ""}") %>">
-            <span class="badge badge_<%= h(b.status_type) %>">
-              <%= h(b.status_label) %>
-            </span>
-          </a>
-        </td>
-        <% if b.status == "failed" %>
-          <% errors, actions = b.scanner.analyze %>
-          <td class="hint" title="<%= actions.map{|a| h(a)}.join("\n") %>">
-            <%= errors.map{|e| h(e)}.join("<br>") %>
-          </td>
+<% else %>
+  <table>
+    <tbody>
+      <% p.builds.each do |b| %>
+        <% if b.status_type == :error %>
+          <tr id="failure_id:<%= h(b.issue_id) %>">
+        <% else %>
+          <tr class="success_row">
         <% end %>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+          <td><%= h(b.package) %></td>
+          <td><%= h(b.target) %></td>
+          <td class="center">
+            <% path = (b.status == "failed") ? "package/live_build_log" : "package/show" %>
+            <a href="<%= h("#{p.web_url}/#{path}/#{p.name}/#{b.package}/#{b.status == "failed" ? b.target : ""}") %>">
+              <span class="badge badge_<%= h(b.status_type) %>">
+                <%= h(b.status_label) %>
+              </span>
+            </a>
+          </td>
+          <% if b.status == "failed" %>
+            <% errors, actions = b.scanner.analyze %>
+            <td class="hint" title="<%= actions.map{|a| h(a)}.join("\n") %>">
+              <%= errors.map{|e| h(e)}.join("<br>") %>
+            </td>
+          <% end %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
 
 <h4 class="<%= !p.declined? ? "success_row" : "" %>">
 <a href="<%= h("#{p.web_url}/project/requests/#{p.name}") %>">
@@ -59,9 +59,7 @@ Declined Submit Requests
   <span class="badge badge_error">
     Error: <%= h(p.error_requests) %>
   </span>
-<% end %>
-
-<% unless p.declined_requests.empty? %>
+<% elsif !p.declined_requests.empty? %>
 <table>
   <tbody>
     <% p.declined_requests.each do |r| %>

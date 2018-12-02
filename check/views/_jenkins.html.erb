@@ -9,42 +9,42 @@
   <span class="badge badge_error">
     Error: <%= h(s.error) %>
   </span>
-<% end %>
-
-<table>
-  <tbody>
-    <% s.jobs.each do |j| %>
-      <% if j.status_type == :error %>
-        <tr id="failure_id:<%= h(j.issue_id) %>">
-      <% else %>
-        <tr class="success_row">
-      <% end %>
-        <td>
-          <a href="<%= h(j.job_url) %>">
-            <%= h(j.name) %>
-          </a>
-        </td>
-        <td class="center">
-          <a href="<%= h(j.console_url) %>">
-            <span class="badge badge_<%= h(j.status_type) %>">
-              <%= h(j.status_label) %>
-            </span>
-          </a>
-        </td>
+<% else %>
+  <table>
+    <tbody>
+      <% s.jobs.each do |j| %>
         <% if j.status_type == :error %>
-          <td>
-            <% unless j.scanner.author.empty? %>
-              <img src="https://github.com/<%= h(j.scanner.author) %>.png?size=32" height="20" class="vmiddle">
-              <%= h(j.scanner.author) %>
-            <% end %>
-          </td>
-          <% errors, actions = j.scanner.analyze %>
-          <td class="hint" title="<%= actions.map{|a| h(a)}.join("\n") %>">
-            <%= errors.map{|e| h(e)}.join("<br>") %>
-          </td>
+          <tr id="failure_id:<%= h(j.issue_id) %>">
+        <% else %>
+          <tr class="success_row">
         <% end %>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+          <td>
+            <a href="<%= h(j.job_url) %>">
+              <%= h(j.name) %>
+            </a>
+          </td>
+          <td class="center">
+            <a href="<%= h(j.console_url) %>">
+              <span class="badge badge_<%= h(j.status_type) %>">
+                <%= h(j.status_label) %>
+              </span>
+            </a>
+          </td>
+          <% if j.status_type == :error %>
+            <td>
+              <% unless j.scanner.author.empty? %>
+                <img src="https://github.com/<%= h(j.scanner.author) %>.png?size=32" height="20" class="vmiddle">
+                <%= h(j.scanner.author) %>
+              <% end %>
+            </td>
+            <% errors, actions = j.scanner.analyze %>
+            <td class="hint" title="<%= actions.map{|a| h(a)}.join("\n") %>">
+              <%= errors.map{|e| h(e)}.join("<br>") %>
+            </td>
+          <% end %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <% end %>
 <% end %>
