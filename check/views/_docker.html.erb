@@ -5,7 +5,12 @@
 <%= status_symbol(d) %>
 </h3>
 
-<%# TODO: error handling %>
+<% if d.error? %>
+  <span class="badge badge_error">
+    Error: <%= h(d.error) %>
+  </span>
+<% end %>
+
 
 <table>
   <tbody>

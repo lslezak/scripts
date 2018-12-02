@@ -12,6 +12,10 @@ module Y2status
       @base_url = base_url
     end
 
+    def error?
+      error && !error.empty?
+    end
+
     def success?
       !jobs.any?(&:failure?)
     end

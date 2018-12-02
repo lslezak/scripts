@@ -14,7 +14,11 @@ Build Results
 </a>
 </h4>
 
-<%# TODO: error handling %>
+<% if p.error_status? %>
+  <span class="badge badge_error">
+    Error: <%= h(p.error_status) %>
+  </span>
+<% end %>
 
 <table>
   <tbody>
@@ -51,7 +55,11 @@ Declined Submit Requests
 </a>
 </h4>
 
-<%# TODO: error handling %>
+<% if p.error_requests? %>
+  <span class="badge badge_error">
+    Error: <%= h(p.error_requests) %>
+  </span>
+<% end %>
 
 <% unless p.declined_requests.empty? %>
 <table>

@@ -47,6 +47,14 @@ module Y2status
       !declined_requests.empty?
     end
 
+    def error_status?
+      error_status && !error_status.empty?
+    end
+
+    def error_requests?
+      error_requests && !error_requests.empty?
+    end
+
     def success?
       builds? && !declined?
     end
@@ -74,6 +82,7 @@ module Y2status
 
       begin
         str = Timeout.timeout(15) { `#{cmd}` }
+        @error_status = "ERROR: Command #{cmd} failed" unless $?.success?
       rescue Timeout::Error
         @error_status = "ERROR: Command #{cmd} timed out"
         print_error(@error_status)
@@ -103,8 +112,9 @@ module Y2status
 
       begin
         out = Timeout.timeout(15) { `#{cmd}` }
+        @error_requests = "ERROR: Command #{cmd} failed" unless $?.success?
       rescue Timeout::Error
-        @error_status = "ERROR: Command #{cmd} timed out"
+        @error_requests = "ERROR: Command #{cmd} timed out"
         print_error(error_status)
         return []
       end

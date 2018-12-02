@@ -17,6 +17,10 @@ module Y2status
       @builds ||= download
     end
 
+    def error?
+      error && !error.empty?
+    end
+
     def success?
       !builds.any?(&:failure?)
     end
@@ -43,7 +47,7 @@ module Y2status
       body = download_url(docker_status_url)
 
       if body.empty?
-        @error = "Cannot download the build status"
+        @error = "Cannot download #{docker_status_url}"
         print_error(error)
         return []
       end
