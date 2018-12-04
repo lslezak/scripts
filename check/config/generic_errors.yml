@@ -31,3 +31,7 @@
 - desc: RPM file conflict
   match: file .* conflicts between attempted installs of .* and .*
   action: Check the package dependencies and the content of the packages
+
+- desc: HTTP service error
+  match: "Server returned an error: HTTP Error"
+  action: Try restating the build later
