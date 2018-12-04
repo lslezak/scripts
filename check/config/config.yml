@@ -3,11 +3,23 @@
 
 jenkins:
   # Jenkins servers
-  - label: External Jenkins
+  - label: External Jenkins - YaST
     url: https://ci.opensuse.org/view/Yast
+  - label: External Jenkins - libyui
+    url: https://ci.opensuse.org/view/libyui
 
-  - label: Internal Jenkins
+  - label: Internal Jenkins - YaST
     url: https://ci.suse.de/view/YaST
+    internal: true
+  - label: Internal Jenkins - libyui
+    url: https://ci.suse.de/view/libyui
+    internal: true
+  - label: Internal Jenkins - InstallTools
+    url: https://ci.suse.de/view/InstallTools
+    internal: true
+  - label: Internal Jenkins - snapper
+    # not included in any view, just a plain job
+    url: https://ci.suse.de/job/snapper-master
     internal: true
 
 obs:
@@ -19,6 +31,13 @@ obs:
   - project: YaST:SLE-12:SP4
 
   - project: YaST:SLE-12:SP3
+
+  - project: filesystems:snapper
+
+  - project: devel:libraries:libyui
+
+  # TODO: system:install:head, but only the packages maintained
+  # by the YaST team - e.g. linuxrc, i-i, hwinfo...
 
   # IBS projects
   - project: Devel:YaST:Head
