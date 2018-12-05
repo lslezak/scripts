@@ -9,11 +9,12 @@ module Y2status
     include Downloader
     include Reporter
 
-    attr_reader :api, :name, :error_status, :error_requests
+    attr_reader :api, :name, :error_status, :error_requests, :packages
 
-    def initialize(name, api = nil)
+    def initialize(name, packages: nil, api: nil)
       @name = name
       @api = api
+      @packages = packages
     end
 
     def builds
@@ -103,6 +104,8 @@ module Y2status
           package = row["_"]
           target = name.sub(/\/[^\/]*$/, "")
 
+          next if packages && !packages.include?(package)
+
           list << ObsBuild.new(self, package, target, status)
         end
       end
@@ -126,8 +129,20 @@ module Y2status
       # the requests are separated by empty lines
       out.split("\n\n").each_with_object([]) do |r, list|
         if r =~ /\A(\d+).*\n\s*(?:maintenance_incident|submit): (.*?)\n/m
+          sr_id = Regexp.last_match[1]
+          submit = Regexp.last_match[2].strip.squeeze(" ")
+
+          if packages
+            if submit.match(/^#{Regexp.escape(name)}\/([^@]+)/)
+              package = Regexp.last_match[1]
+              next unless packages.include?(package)
+            else
+              next
+            end
+          end
+
           # remove repeated spaces by #squeeze
-          list << ObsRequest.new(self, Regexp.last_match[1], Regexp.last_match[2].strip.squeeze(" "))
+          list << ObsRequest.new(self, sr_id, submit)
         end
       end
     end
