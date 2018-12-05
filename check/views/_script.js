@@ -164,7 +164,7 @@ function update_page(iframe)
   add_local_time();
 }
 
-function receiveMessage(event)
+function receive_message(event)
 {
   var iframe = document.querySelectorAll("iframe")[0];
   if (iframe == null || iframe.contentWindow != event.source)
@@ -188,7 +188,7 @@ function receiveMessage(event)
   notify(new_ids);
 }
 
-window.addEventListener("message", receiveMessage, false);
+window.addEventListener("message", receive_message, false);
 
 function run_display_filter(only_failures)
 {

@@ -35,3 +35,7 @@
 - desc: HTTP service error
   match: "Server returned an error: HTTP Error"
   action: Try restating the build later
+
+- desc: Compiler crashed
+  match: "internal compiler error: Segmentation fault"
+  action: Hopefully a random issue, try restating the build...
