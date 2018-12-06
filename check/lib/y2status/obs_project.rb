@@ -77,7 +77,7 @@ module Y2status
     # @param [String] project the project name
     # @param [String,nil] api the API URL
     #
-    # @return [CSV::Table] the parsed table
+    # @return [Array<ObsBuild>] the found OBS builds
     #
     def download_builds
       opt = api ? "-A #{Shellwords.escape(api)} " : ""
@@ -87,10 +87,14 @@ module Y2status
 
       begin
         str = Timeout.timeout(15) { `#{cmd}` }
-        @error_status = "Command #{cmd} failed" unless $?.success?
       rescue Timeout::Error
         @error_status = "Command #{cmd} timed out"
         print_error(@error_status)
+        return []
+      end
+
+      if !$?.success?
+        @error_status = "Command #{cmd} failed"
         return []
       end
 
@@ -119,10 +123,15 @@ module Y2status
 
       begin
         out = Timeout.timeout(15) { `#{cmd}` }
-        @error_requests = "Command #{cmd} failed" unless $?.success?
       rescue Timeout::Error
         @error_requests = "Command #{cmd} timed out"
-        print_error(error_status)
+        print_error(error_requests)
+        return []
+      end
+
+      if !$?.success?
+        @error_requests = "Command #{cmd} failed"
+        print_error(error_requests)
         return []
       end
 
