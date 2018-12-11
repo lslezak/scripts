@@ -83,15 +83,15 @@ def run_in(dir, cmd)
   loop do
     `(cd #{Shellwords.escape(dir)} && #{cmd})`
 
-    break if $CHILD_STATUS.success?
+    break if $?.success?
 
     if attempt > MAX_ATTEMPS
-      $stderr.puts "Command #{cmd.inspect} still fails, giving up"
+      $stderr.puts "Command #{cmd.inspect} in directory #{dir} still fails, giving up"
       exit(1)
     end
 
     attempt += 1
-    $stderr.puts "Error: #{$CHILD_STATUS.exitstatus}, retrying in #{RETRY_TIMEOUT} seconds..."
+    $stderr.puts "Error: command: #{cmd.inspect}, dir: #{dir}, exit: #{$?.exitstatus}, retrying in #{RETRY_TIMEOUT} seconds..."
     sleep(RETRY_TIMEOUT)
   end
 end
@@ -156,6 +156,7 @@ IGNORED_REPOS = [
   "yast-slepos-image-builder",
   "yast-slepos-system-manager",
   "yast-slide-show",
+  "yast-storage",
   "yast-tv",
   "yast-ui-qt-tests",
   "yast-update-alternatives",
