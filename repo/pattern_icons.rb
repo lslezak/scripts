@@ -27,29 +27,35 @@ require "rexml/streamlistener"
 Signal.trap('INT') { puts "Aborted"; exit 1 }
 Signal.trap('TERM') { puts "Aborted"; exit 1 }
 
+class Pattern
+  attr_reader :name, :src_name, :icon
+
+  def initialize(name, src, icon)
+    @name = name
+    @src_name = src
+    @icon = icon
+  end
+end
+
 # use the XML SAX (streaming) parser,
 # the uncompressed Leap 15.1 XML is ~97MB!
 class Listener
   include REXML::StreamListener
 
-  attr_reader :pattern_icons
+  attr_reader :patterns
   
   def initialize
-    @pattern_icons = {}
+    @patterns = []
   end
    
   def tag_start(tag, attrs)
     if tag == "name"
       @in_name_tag = true
-    end
-
-    if tag == "rpm:provides"
+    elsif tag == "rpm:provides"
       @in_provides = true
       @icon = nil
       @visible = false
-    end
-
-    if tag == "rpm:entry" && @in_provides
+    elsif tag == "rpm:entry" && @in_provides
       if attrs["name"] == "pattern-visible()"
         @visible = true
       elsif attrs["name"] == "pattern-icon()"
@@ -58,19 +64,27 @@ class Listener
 
         @icon << "-" << rel if rel && !rel.empty?
       end
+    elsif tag == "rpm:sourcerpm"
+      @in_src_rpm = true
     end
   end
   
   def text(data)
     @package = data if @in_name_tag
+    @src_package = data if @in_src_rpm
   end
   
   def tag_end(tag)
     @in_name_tag = false if tag == "name"
+    @in_src_rpm = false if tag == "rpm:sourcerpm"
     if tag == "rpm:provides" 
       # ignore icons for invisible patterns
       # normally should not happen, but there are some =:-O
-      pattern_icons[@package] = @icon if @icon && @visible
+      patterns << Pattern.new(@package, @src_package, @icon) if @icon && @visible
+
+      # if @icon && !@visible
+      #   puts "WARNING: #{@package} invisible icon #{@icon}"
+      # end
       @in_provides = false
     end
   end
@@ -85,28 +99,28 @@ def icons_from_meta(file)
     REXML::Document.parse_stream(gz, l)
   end
 
-  l.pattern_icons  
+  l.patterns
 end
 
-icons = {}
+patterns = []
 
 # the argument is a file
 if ARGV[0] && File.file?(ARGV[0])
-  icons = icons_from_meta(ARGV[0])
+  patterns = icons_from_meta(ARGV[0])
 else
   # otherwise treat the argument as a dir,
   # use the current dir if no argument passed
   Dir[File.join(ARGV[0] || Dir.pwd, "/**/*-primary.xml.gz") ].each do |f|
-    icons.merge!(icons_from_meta(f))
+    patterns.concat(icons_from_meta(f))
   end
 end
 
 # print the summary
 puts "Pattern Icons"
 puts "=============\n\n"
-icons.each { |p, i| puts "#{p}: #{i}" }
+patterns.each { |p| puts "#{p.name} (#{p.src_name}): #{p.icon}" }
 
 puts
 puts "Unique Icon Names"
 puts "=================\n\n"
-puts icons.values.sort.uniq.join("\n")
+puts patterns.map(&:icon).sort.uniq.join("\n")
