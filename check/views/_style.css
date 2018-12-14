@@ -62,9 +62,7 @@ a:hover .badge {
 }
 
 .docker_icon {
-  background-color: #0061b5;
-  padding: 5px;
-  border-radius: 20px;
+  vertical-align: text-bottom;
 }
 
 #new_issues_count {
