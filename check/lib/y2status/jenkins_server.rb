@@ -45,14 +45,14 @@ module Y2status
 
       data = JSON.parse(body)
 
-      # a single job
-      if (data.is_a?(Hash))
-        return [JenkinsJob.new(self, data["name"], data["color"])]
-      end
-
-      # list of jobs
-      data["jobs"].map do |s|
-        JenkinsJob.new(self, s["name"], s["color"])
+      if data.key?("jobs")
+        # list of jobs
+        data["jobs"].map do |s|
+          JenkinsJob.new(self, s["name"], s["color"])
+        end
+      else
+        # a single job
+        [JenkinsJob.new(self, data["name"], data["color"])]
       end
     end
   end
