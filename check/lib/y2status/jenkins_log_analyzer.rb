@@ -3,7 +3,6 @@ require "yaml"
 module Y2status
   # Jenkins log analyzer
   class JenkinsLogAnalyzer < LogAnalyzer
-
     def initialize(log)
       super
     end

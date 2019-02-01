@@ -1,4 +1,5 @@
 
+require "English"
 require "csv"
 require "shellwords"
 require "timeout"
@@ -93,7 +94,7 @@ module Y2status
         return []
       end
 
-      if !$?.success?
+      if !$CHILD_STATUS.success?
         @error_status = "Command #{cmd} failed"
         return []
       end
@@ -129,7 +130,7 @@ module Y2status
         return []
       end
 
-      if !$?.success?
+      if !$CHILD_STATUS.success?
         @error_requests = "Command #{cmd} failed"
         print_error(error_requests)
         return []
@@ -137,22 +138,21 @@ module Y2status
 
       # the requests are separated by empty lines
       out.split("\n\n").each_with_object([]) do |r, list|
-        if r =~ /\A(\d+).*\n\s*(?:maintenance_incident|submit): (.*?)\n/m
-          sr_id = Regexp.last_match[1]
-          submit = Regexp.last_match[2].strip.squeeze(" ")
+        next unless r =~ /\A(\d+).*\n\s*(?:maintenance_incident|submit): (.*?)\n/m
+        sr_id = Regexp.last_match[1]
+        submit = Regexp.last_match[2].strip.squeeze(" ")
 
-          if packages
-            if submit.match(/^#{Regexp.escape(name)}\/([^@]+)/)
-              package = Regexp.last_match[1]
-              next unless packages.include?(package)
-            else
-              next
-            end
+        if packages
+          if submit =~ /^#{Regexp.escape(name)}\/([^@]+)/
+            package = Regexp.last_match[1]
+            next unless packages.include?(package)
+          else
+            next
           end
-
-          # remove repeated spaces by #squeeze
-          list << ObsRequest.new(self, sr_id, submit)
         end
+
+        # remove repeated spaces by #squeeze
+        list << ObsRequest.new(self, sr_id, submit)
       end
     end
   end
