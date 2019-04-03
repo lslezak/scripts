@@ -45,17 +45,16 @@ ARGV.each do |p|
   puts "-" * 60
   puts "Pull request #{Rainbow(p).cyan}"
   puts "Title: #{pull[:title]}"
-
-  if pull[:merged]
-    puts Rainbow("Already merged").bright.yellow
-    next
-  end
-
   puts "-" * 60
 
   # display the diff
   system("curl -L #{pull[:diff_url]}")
   puts "-" * 60
+
+  if pull[:merged]
+    puts Rainbow("Already merged").bright.yellow
+    next
+  end
 
   # display the status (Travis)
   status_url = pull[:statuses_url]
