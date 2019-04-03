@@ -1,6 +1,7 @@
 source "https://rubygems.org"
 gem "octokit"
 gem "netrc"
+gem "rainbow"
 
 # gem "byebug"
 # gem "jenkins_api_client"

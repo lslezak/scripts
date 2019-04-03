@@ -15,15 +15,16 @@ require "rubygems"
 require "bundler/setup"
 
 require "octokit"
+require "rainbow"
 
 # use ~/.netrc ?
 netrc = File.join(Dir.home, ".netrc")
-client_options = if File.exist?(netrc) && File.read(netrc).match(/^machine api.github.com/)
-  # see https://github.com/octokit/octokit.rb#authentication
-  { netrc: true }
-elsif ENV["GH_TOKEN"]
+client_options = if ENV["GH_TOKEN"]
   # Generate at https://github.com/settings/tokens
   { access_token: ENV["GH_TOKEN"] }
+elsif File.exist?(netrc) && File.read(netrc).match(/^machine api.github.com/)
+  # see https://github.com/octokit/octokit.rb#authentication
+  { netrc: true }
 else
   raise "Github authentication not set"
 end
@@ -42,8 +43,14 @@ ARGV.each do |p|
 
   puts
   puts "-" * 60
-  puts "Pull request #{p}:"
+  puts "Pull request #{Rainbow(p).cyan}"
   puts "Title: #{pull[:title]}"
+
+  if pull[:merged]
+    puts Rainbow("Already merged").bright.yellow
+    next
+  end
+
   puts "-" * 60
 
   # display the diff
@@ -57,11 +64,13 @@ ARGV.each do |p|
 
   if sha
     status = client.status(repo, sha)
-    puts "\nOverall Status: #{status[:state]}\n\n"
+    color = status[:state] == "success" ? :green : :red
+    puts "\nOverall Status: " + Rainbow("#{status[:state]}\n\n").color(color)
 
     if status[:state] == "failure"
       status[:statuses].each do |st|
-        puts "    #{st[:state]}: #{st[:description]}"
+        color = st[:state] == "success" ? :green : :red
+        puts Rainbow("    #{st[:state]}: #{st[:description]}").color(color)
       end
     end
 
