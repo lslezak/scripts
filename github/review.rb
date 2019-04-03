@@ -47,7 +47,14 @@ ARGV.each do |p|
 
   if sha
     status = client.status(repo, sha)
-    puts "\nStatus: #{status[:state]}\n\n"
+    puts "\nOverall Status: #{status[:state]}\n\n"
+
+    if status[:state] == "failure"
+      status[:statuses].each do |st|
+        puts "    #{st[:state]}: #{st[:description]}"
+      end
+    end
+
     puts "-" * 60
   end
 
