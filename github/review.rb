@@ -83,14 +83,15 @@ ARGV.each do |p|
   puts "Approving #{repo} ##{pr}..."
   client.create_pull_request_review(repo, pr, options)
 
-  # if you do not want to merge or delete the source branch just comment the lines below
+  # if you do not want to merge or delete the source branch just add "next" below
 
   puts "Merging #{repo} ##{pr}..."
   client.merge_pull_request(repo, pr)
 
-  pull = client.pull_request(repo, pr)
-  branch = pull[:head][:ref]
+  # we cannot delete the source branch from a fork (different owner)
+  next if pull[:head][:repo][:fork]
 
+  branch = pull[:head][:ref]
   puts "Deleting #{branch} branch in #{repo}..."
   client.delete_branch(repo, branch)
 end
