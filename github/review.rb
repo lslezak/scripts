@@ -16,9 +16,19 @@ require "bundler/setup"
 
 require "octokit"
 
-# Generate at https://github.com/settings/tokens
-# or see https://github.com/octokit/octokit.rb#authentication
-client = Octokit::Client.new(access_token: ENV["GH_TOKEN"])
+# use ~/.netrc ?
+netrc = File.join(Dir.home, ".netrc")
+client_options = if File.exist?(netrc) && File.read(netrc).match(/^machine api.github.com/)
+  # see https://github.com/octokit/octokit.rb#authentication
+  { netrc: true }
+elsif ENV["GH_TOKEN"]
+  # Generate at https://github.com/settings/tokens
+  { access_token: ENV["GH_TOKEN"] }
+else
+  raise "Github authentication not set"
+end
+
+client = Octokit::Client.new(client_options)
 client.auto_paginate = true
 
 ARGV.each do |p|
