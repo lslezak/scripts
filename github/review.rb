@@ -66,7 +66,7 @@ ARGV.each do |p|
     color = status[:state] == "success" ? :green : :red
     puts "\nOverall Status: " + Rainbow("#{status[:state]}\n\n").color(color)
 
-    if status[:state] == "failure"
+    if status[:state] != "success"
       status[:statuses].each do |st|
         color = st[:state] == "success" ? :green : :red
         puts Rainbow("    #{st[:state]}: #{st[:description]}").color(color)
