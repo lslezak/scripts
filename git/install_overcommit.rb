@@ -15,68 +15,25 @@
 # Overcommit configuration
 OVERCOMMIT_CFG = ".overcommit.yml".freeze
 
-def install_overcommit(dir)
+def install_overcommit(dir, template)
   # skip if overcommit is already present
   overcommit_file = File.join(dir, OVERCOMMIT_CFG)
   return if File.exist?(overcommit_file)
 
+  return unless File.exist?(File.join(dir, "Makefile.cvs")) || File.exist?(File.join(dir, "Rakefile"))
+
   rubocop_enabled = File.exist?(File.join(dir, ".rubocop.yml"))
+  add_rubocop = !Dir["#{dir}/**/*.rb"].empty?
+
   test_command = if File.exist?(File.join(dir, "Makefile.cvs"))
     ["make", "check"]
   else
     ["rake", "test:unit"]
   end
 
-  config = <<EOS
-# Use this file to configure the Overcommit hooks you wish to use. This will
-# extend the default configuration defined in:
-# https://github.com/brigade/overcommit/blob/master/config/default.yml
-#
-# At the topmost level of this YAML file is a key representing type of hook
-# being run (e.g. pre-commit, commit-msg, etc.). Within each type you can
-# customize each hook, such as whether to only run it on certain files (via
-# `include`), whether to only display output if it fails (via `quiet`), etc.
-#
-# For a complete list of hooks, see:
-# https://github.com/brigade/overcommit/tree/master/lib/overcommit/hook
-#
-# For a complete list of options that you can use to customize hooks, see:
-# https://github.com/brigade/overcommit#configuration
-
-CommitMsg:
-  SpellCheck:
-    enabled: true
-    # force using the English dictionary
-    env:
-      LC_ALL: en_US.UTF-8
-
-PreCommit:
-  # do not commit directly to these branches, use Pull Requests!
-  ForbiddenBranches:
-    enabled: true
-    branch_patterns:
-      - master
-      - openSUSE-*
-      - SLE-10-*
-      - Code-11*
-      - SLE-12-*
-
-  RuboCop:
-    enabled: #{rubocop_enabled}
-    # treat all warnings as failures
-    on_warn: fail
-
-PrePush:
-  RSpec:
-    enabled: true
-    command: #{test_command.inspect}
-    # don't fail because of translations
-    env:
-      LC_ALL: en_US.UTF-8
-EOS
-
+  erb = ERB.new(template)
   # write the config file
-  File.write(overcommit_file, config)
+  File.write(overcommit_file, erb.result(binding))
 
   # install the hooks
   Dir.chdir(dir) do
@@ -92,11 +49,13 @@ end
 require "find"
 start = ARGV[0] || "."
 
+template = File.read(File.join(__dir__, "overcommit_template.yml.erb"))
+
 Find.find(start) do |path|
   # a Git repository?
   next unless File.directory?(File.join(path, ".git"))
 
-  install_overcommit(path)
+  install_overcommit(path, template)
 
   # stop searching in this directory
   Find.prune
