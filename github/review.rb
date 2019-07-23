@@ -1,14 +1,27 @@
 #!/usr/bin/env ruby
 
 # Usage:
-# $PROGRAM_NAME <PR_URL> <PR_URL> ...
+# $PROGRAM_NAME [--merge] [--delete] <PR_URL> <PR_URL> ...
+#   --merge     - merge the approved pull requests
+#   --delete    - remove the source branch after merging,
+#                 (skipped when the PR is opened from a fork)
 #
-# This script approves a PR, merges it and removes the source branch
+# This script displays the details about the specified pull requests
+# (the title, diff, Travis status).
+# If everything is fine it can approve the pull request and
+# optionally merges it and remov the source branch.
+
+require "shellwords"
 
 # install missing gems
-if !File.exist?(".vendor")
-  puts "Installing the needed Rubygems to .vendor/bundle ..."
-  system "bundle install --path .vendor/bundle"
+vendor_dir = File.join(__dir__, ".vendor")
+bundle_dir = File.join(vendor_dir, "bundle")
+
+ENV["BUNDLE_GEMFILE"] = File.join(__dir__, "Gemfile")
+
+if !File.exist?(vendor_dir)
+  puts "Installing the needed Rubygems to #{bundle_dir} ..."
+  system "bundle install --path #{bundle_dir.shellescape}"
 end
 
 require "rubygems"
@@ -16,6 +29,22 @@ require "bundler/setup"
 
 require "octokit"
 require "rainbow"
+require "optparse"
+
+merge_pr = false
+delete_branch = false
+
+OptionParser.new do |parser|
+  parser.banner = "Usage: #{$PROGRAM_NAME} [options] PR_URL1 PR_URL2 ..."
+
+  parser.on("-m", "--merge", "Merge the approved pull requests") do |m|
+    merge_pr = m
+  end
+
+  parser.on("-d", "--delete", "Delete the source branch after merging (forks are skipped)") do |d|
+    delete_branch = d
+  end
+end.parse!
 
 # use ~/.netrc ?
 netrc = File.join(Dir.home, ".netrc")
@@ -33,8 +62,11 @@ client = Octokit::Client.new(client_options)
 client.auto_paginate = true
 
 ARGV.each do |p|
-  p.match(/^https:\/\/github.com\/(\S+)\/pull\/(\d+)/)
-  next unless Regexp.last_match
+  p =~ /^https:\/\/github.com\/(\S+)\/pull\/(\d+)/
+  if !Regexp.last_match
+    puts "Skipping #{p.inspect}, does not look like a GitHub pull request URL"
+    next
+  end
 
   repo = Regexp.last_match[1]
   pr = Regexp.last_match[2]
@@ -58,7 +90,7 @@ ARGV.each do |p|
 
   # display the status (Travis)
   status_url = pull[:statuses_url]
-  status_url.match("https://api.github.com/repos/.*/statuses/(.*)")
+  status_url =~ "https://api.github.com/repos/.*/statuses/(.*)"
   sha = Regexp.last_match[1]
 
   if sha
@@ -83,10 +115,12 @@ ARGV.each do |p|
   puts "Approving #{repo} ##{pr}..."
   client.create_pull_request_review(repo, pr, options)
 
-  # if you do not want to merge or delete the source branch just add "next" below
+  next unless merge_pr
 
   puts "Merging #{repo} ##{pr}..."
   client.merge_pull_request(repo, pr)
+
+  next unless delete_branch
 
   # we cannot delete the source branch from a fork (different owner)
   next if pull[:head][:repo][:fork]
