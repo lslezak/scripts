@@ -1,0 +1,200 @@
+#!/usr/bin/env ruby
+
+# This script updates the YaST files in the inst-sys
+# with the files from GitHub.
+
+require "fileutils"
+require "find"
+require "optparse"
+require "pathname"
+require "shellwords"
+require "tmpdir"
+
+# we need this gem for running the "rake install" command
+NEEDED_GEM = "yast-rake".freeze
+OVERLAY_PREFIX = "/var/lib/YaST/overlayfs".freeze
+
+# globs for ignored files
+SKIP_FILES = [
+  # skip documentation
+  "/usr/share/doc/*",
+  # skip sysconfig templates
+  "/usr/share/fillup-templates/*"
+].freeze
+
+def msg(message)
+  puts message
+end
+
+def details(message)
+  # FIXME: only when verbose is set
+  # puts message if ....
+end
+
+def check_env
+  return if ENV["YAST_IS_RUNNING"] == "instsys"
+
+  $stderr.puts "ERROR: This script can only work in the installation system (int-sys)!"
+  exit 1
+end
+
+def gem_installed?(gem_name)
+  gem(gem_name)
+  true
+rescue Gem::LoadError
+  false
+end
+
+def install_gems(gem_names)
+  system("gem install --no-document --no-format-exec #{gem_names.map(&:shellescape).join(" ")}")
+end
+
+def add_overlay(dir)
+  return if File.writable?(dir)
+  msg("Adding writable overlay for #{dir}...")
+
+  dir_name = dir.tr("/", "_")
+  upperdir = File.join(OVERLAY_PREFIX, "upper", dir_name)
+  workdir = File.join(OVERLAY_PREFIX, "workdir", dir_name)
+  original_dir = File.join(OVERLAY_PREFIX, "original", dir_name)
+
+  FileUtils.mkdir_p(upperdir)
+  FileUtils.mkdir_p(workdir)
+  FileUtils.mkdir_p(original_dir)
+
+  # make the original content available in a separate directory
+  system("mount --bind #{dir.shellescape} #{original_dir.shellescape}")
+  # mark the mount as a private otherwise the overlay would propagate
+  # through the bind mount and we would see the changed content here
+  system("mount --make-private #{original_dir.shellescape} ")
+
+  system("mount -t overlay overlay -o lowerdir=#{dir.shellescape}," \
+    "upperdir=#{upperdir.shellescape},workdir=#{workdir.shellescape} #{dir.shellescape}")
+end
+
+def download_gh_archive(repo, branch, dir)
+  url = "https://github.com/#{repo}/archive/#{branch}.tar.gz"
+  msg("Downloading #{url}...")
+  Dir.chdir(dir) do
+    system("curl -L -s #{url.shellescape} | tar --strip-components=1 -xz")
+  end
+end
+
+def install_sources(src, target)
+  msg("Preparing files...")
+  Dir.chdir(src) do
+    `rake install DESTDIR=#{target.shellescape} 2> /dev/null`
+  end
+end
+
+def skip_file?(file)
+  SKIP_FILES.any? { |glob| File.fnmatch?(glob, file) }
+end
+
+def copy_to_system(src)
+  src_path = Pathname.new(src)
+  cnt = 0
+  Find.find(src) do |path|
+    # TODO: what about symlinks or empty directories?
+    next unless File.file?(path)
+
+    relative_path = Pathname.new(path).relative_path_from(src_path).to_s
+    system_file = File.absolute_path(relative_path, "/")
+    system_dir = File.dirname(system_file)
+
+    if skip_file?(system_file)
+      details("Skipping: #{system_file}")
+      next
+    end
+
+    if File.exist?(system_file)
+      if FileUtils.identical?(system_file, path)
+        details("Not modified: #{system_file}")
+        next
+      else
+        add_overlay(system_dir)
+        FileUtils.cp(path, system_file)
+        msg("Updated: #{system_file}")
+        cnt += 1
+      end
+    else
+      # ensure the parent directory exist
+      # FIXME: maybe an overlay is also needed...
+      FileUtils.mkdir_p(system_dir)
+      FileUtils.cp(path, system_file)
+      puts "Added: #{system_file}"
+      cnt += 1
+    end
+  end
+
+  msg("Number of modified files: #{cnt}")
+end
+
+check_env
+
+repo = ""
+branch = "master"
+overlay = ""
+
+OptionParser.new do |parser|
+  parser.on("-r", "--repo GITHUB_REPO", "GitHub repository name") do |r|
+    repo = r
+
+    # add the default "yast" GitHub organization if missing
+    repo = "yast/#{repo}" unless repo.include?("/")
+  end
+
+  parser.on("-b", "--branch BRANCH_OR_TAG",
+    "Use the specified branch or tag (default: master") do |b|
+    branch = b
+  end
+
+  parser.on("-o", "--overlay DIR",
+    "Create overlayfs mount for the specified directory") do |o|
+    
+    if File.directory?(o)
+      overlay = o
+    else
+      puts "ERROR: Directory #{o} not found"
+      exit 1
+    end
+  end
+
+  # parser.on("-v", "--verbose", "Verbose output") do |v|
+  # end
+end.parse!
+
+if !overlay.empty?
+  add_overlay(overlay)
+
+  # if only overlay was requested finish successfully now
+  exit 0 if repo.empty?  
+end
+
+
+# validation
+if repo.empty?
+  $stderr.puts "Missing or empty repo parameter!"
+  exit 1
+end
+
+if !gem_installed?(NEEDED_GEM)
+  msg("Installing missing Ruby gems...")
+  add_overlay(Gem.dir)
+
+  gems = [NEEDED_GEM]
+  # handle the rake gem specifically, it is present in the system, but
+  # the /usr/bin/rake file is missing
+  gems << "rake" if !File.exist?("/usr/bin/rake")
+
+  install_gems(gems)
+end
+
+Dir.mktmpdir do |download_dir|
+  download_gh_archive(repo, branch, download_dir)
+
+  Dir.mktmpdir do |target_dir|
+    install_sources(download_dir, target_dir)
+    copy_to_system(target_dir)
+  end
+end
