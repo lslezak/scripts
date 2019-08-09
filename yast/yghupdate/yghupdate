@@ -32,7 +32,8 @@ def details(message)
 end
 
 def check_env
-  return if ENV["YAST_IS_RUNNING"] == "instsys"
+  mounts = `mount`
+  return if mounts.match(/^tmpfs on \/ type tmpfs/)
 
   $stderr.puts "ERROR: This script can only work in the installation system (int-sys)!"
   exit 1
