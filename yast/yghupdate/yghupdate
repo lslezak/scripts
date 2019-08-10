@@ -168,6 +168,7 @@ repo = ""
 branch = "master"
 overlay = ""
 list = false
+file_list = false
 reset = false
 
 OptionParser.new do |parser|
@@ -198,6 +199,10 @@ OptionParser.new do |parser|
     list = true
   end
 
+  parser.on("-f", "--list-files", "List overlayed files") do |_l|
+    file_list = true
+  end
+
   parser.on("-r", "--reset", "Remove all overlays, reset the system to the original state") do |_l|
     reset = true
   end
@@ -213,6 +218,16 @@ if list
 
   puts "Defined overlays:"
   puts overlays
+end
+
+if file_list
+  upper = Pathname.new(File.join(OVERLAY_PREFIX, "upper"))
+  puts upper
+  Dir["#{upper}/**/*"].each do |f|
+    next unless File.file?(f)
+    relative_path = Pathname.new(f).relative_path_from(upper).to_s
+    puts relative_path
+  end
 end
 
 # validation
