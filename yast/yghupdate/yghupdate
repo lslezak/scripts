@@ -33,7 +33,7 @@ end
 
 def check_env
   mounts = `mount`
-  return if mounts.match(/^tmpfs on \/ type tmpfs/)
+  return if mounts =~ /^tmpfs on \/ type tmpfs/
 
   $stderr.puts "ERROR: This script can only work in the installation system (int-sys)!"
   exit 1
@@ -131,11 +131,44 @@ def copy_to_system(src)
   msg("Number of modified files: #{cnt}")
 end
 
+def list_overlays
+  mounts = `mount`
+
+  mounts.lines.each_with_object([]) do |line, arr|
+    arr << Regexp.last_match[1] if line =~ /^overlay on (.*) type overlay /
+  end
+end
+
+def reset_all
+  overlays = list_overlays
+  return if overlays.empty?
+
+  msg("Resetting all changes...")
+  overlays.each do |o|
+    `umount #{o.shellescape}`
+  end
+
+  Dir["#{File.join(OVERLAY_PREFIX, "original")}/*"].each do |o|
+    puts "umount #{o}"
+    `umount #{o.shellescape}`
+  end
+
+  FileUtils.rm_rf(
+    [
+      File.join(OVERLAY_PREFIX, "upper"),
+      File.join(OVERLAY_PREFIX, "workdir"),
+      File.join(OVERLAY_PREFIX, "original")
+    ]
+  )
+end
+
 check_env
 
 repo = ""
 branch = "master"
 overlay = ""
+list = false
+reset = false
 
 OptionParser.new do |parser|
   parser.on("-r", "--repo GITHUB_REPO", "GitHub repository name") do |r|
@@ -152,7 +185,7 @@ OptionParser.new do |parser|
 
   parser.on("-o", "--overlay DIR",
     "Create overlayfs mount for the specified directory") do |o|
-    
+
     if File.directory?(o)
       overlay = o
     else
@@ -161,41 +194,49 @@ OptionParser.new do |parser|
     end
   end
 
-  # parser.on("-v", "--verbose", "Verbose output") do |v|
-  # end
+  parser.on("-l", "--list-overlays", "List overlays") do |_l|
+    list = true
+  end
+
+  parser.on("-r", "--reset", "Remove all overlays, reset the system to the original state") do |_l|
+    reset = true
+  end
+
+  parser.on("-v", "--verbose", "Verbose output") do |v|
+  end
 end.parse!
 
-if !overlay.empty?
-  add_overlay(overlay)
+add_overlay(overlay) if !overlay.empty?
 
-  # if only overlay was requested finish successfully now
-  exit 0 if repo.empty?  
+if list
+  overlays = list_overlays
+
+  puts "Defined overlays:"
+  puts overlays
 end
-
 
 # validation
-if repo.empty?
-  $stderr.puts "Missing or empty repo parameter!"
-  exit 1
-end
+if !repo.empty?
+  if !gem_installed?(NEEDED_GEM)
+    msg("Installing missing Ruby gems...")
+    add_overlay(Gem.dir)
 
-if !gem_installed?(NEEDED_GEM)
-  msg("Installing missing Ruby gems...")
-  add_overlay(Gem.dir)
+    gems = [NEEDED_GEM]
+    # handle the rake gem specifically, it is present in the system, but
+    # the /usr/bin/rake file is missing
+    gems << "rake" if !File.exist?("/usr/bin/rake")
 
-  gems = [NEEDED_GEM]
-  # handle the rake gem specifically, it is present in the system, but
-  # the /usr/bin/rake file is missing
-  gems << "rake" if !File.exist?("/usr/bin/rake")
+    install_gems(gems)
+  end
 
-  install_gems(gems)
-end
+  Dir.mktmpdir do |download_dir|
+    download_gh_archive(repo, branch, download_dir)
 
-Dir.mktmpdir do |download_dir|
-  download_gh_archive(repo, branch, download_dir)
-
-  Dir.mktmpdir do |target_dir|
-    install_sources(download_dir, target_dir)
-    copy_to_system(target_dir)
+    Dir.mktmpdir do |target_dir|
+      install_sources(download_dir, target_dir)
+      copy_to_system(target_dir)
+    end
   end
 end
+
+reset_all if reset
