@@ -195,11 +195,11 @@ OptionParser.new do |parser|
     end
   end
 
-  parser.on("-l", "--list-overlays", "List overlays") do |_l|
+  parser.on("-l", "--list-overlays", "List overlay mounts") do |_l|
     list = true
   end
 
-  parser.on("-f", "--list-files", "List overlayed files") do |_l|
+  parser.on("-f", "--list-files", "List overlay files") do |_l|
     file_list = true
   end
 
@@ -222,11 +222,12 @@ end
 
 if file_list
   upper = Pathname.new(File.join(OVERLAY_PREFIX, "upper"))
-  puts upper
   Dir["#{upper}/**/*"].each do |f|
     next unless File.file?(f)
-    relative_path = Pathname.new(f).relative_path_from(upper).to_s
-    puts relative_path
+    relative_path = Pathname.new(f).relative_path_from(upper)
+    parts = relative_path.split
+    parts[0] = parts.first.to_s.tr!("_", "/")
+    puts parts.join("/")
   end
 end
 
