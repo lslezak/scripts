@@ -172,7 +172,7 @@ file_list = false
 reset = false
 
 OptionParser.new do |parser|
-  parser.on("-r", "--repo GITHUB_REPO", "GitHub repository name") do |r|
+  parser.on("-g", "--ghrepo GITHUB_REPO", "GitHub repository name") do |r|
     repo = r
 
     # add the default "yast" GitHub organization if missing
@@ -180,7 +180,7 @@ OptionParser.new do |parser|
   end
 
   parser.on("-b", "--branch BRANCH_OR_TAG",
-    "Use the specified branch or tag (default: master") do |b|
+    "Use the specified branch or tag (default: master)") do |b|
     branch = b
   end
 
