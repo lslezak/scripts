@@ -12,7 +12,18 @@ require "tmpdir"
 
 # we need this gem for running the "rake install" command
 NEEDED_GEM = "yast-rake".freeze
-OVERLAY_PREFIX = "/var/lib/YaST/overlayfs".freeze
+OVERLAY_PREFIX = "/var/lib/YaST2/overlayfs".freeze
+YAST_OVERLAYS = [
+  "/usr/lib/YaST2",
+  "/usr/lib64/YaST2",
+  "/usr/share/autoinstall",
+  "/usr/share/applications/YaST2",
+  # /usr/share/YaST2/ needs to be handled specially, it is writable
+  # but contains symlinks to read-only subdirectories
+  *Dir["/usr/share/YaST2/*"].each_with_object([]) do |f, arr|
+    arr << f if File.directory?(f) && !File.writable?(f)
+  end
+]
 
 # globs for ignored files
 SKIP_FILES = [
@@ -50,9 +61,15 @@ def install_gems(gem_names)
   system("gem install --no-document --no-format-exec #{gem_names.map(&:shellescape).join(" ")}")
 end
 
+def add_default_overlays
+  YAST_OVERLAYS.each do |o|
+    add_overlay(o)
+  end
+end
+
 def add_overlay(dir)
   return if File.writable?(dir)
-  msg("Adding writable overlay for #{dir}...")
+  msg("Adding overlay for #{dir}...")
 
   dir_name = dir.tr("/", "_")
   upperdir = File.join(OVERLAY_PREFIX, "upper", dir_name)
@@ -119,9 +136,14 @@ def copy_to_system(src)
         cnt += 1
       end
     else
-      # ensure the parent directory exist
-      # FIXME: maybe an overlay is also needed...
-      FileUtils.mkdir_p(system_dir)
+      # ensure the directory is writable
+      if File.exist?(system_dir)
+        add_overlay(system_dir)
+      else
+        # FIXME: maybe an overlay is needed for the upper directory...
+        FileUtils.mkdir_p(system_dir)
+      end
+
       FileUtils.cp(path, system_file)
       puts "Added: #{system_file}"
       cnt += 1
@@ -145,6 +167,7 @@ def reset_all
 
   msg("Resetting all changes...")
   overlays.each do |o|
+    puts "umount #{o}"
     `umount #{o.shellescape}`
   end
 
@@ -162,6 +185,21 @@ def reset_all
   )
 end
 
+def modified_files(&block)
+  return unless block_given?
+
+  upper = Pathname.new(File.join(OVERLAY_PREFIX, "upper"))
+  orig = Pathname.new(File.join(OVERLAY_PREFIX, "original"))
+  Find.find(upper) do |f|
+    next unless File.file?(f)
+    relative_path = Pathname.new(f).relative_path_from(upper)
+    original_path = File.join(orig, relative_path)
+    parts = relative_path.split
+    parts[0] = parts.first.to_s.tr("_", "/").gsub("//", "/")
+    block.call(File.join(*parts), f, original_path)
+  end
+end
+
 check_env
 
 repo = ""
@@ -170,8 +208,15 @@ overlay = ""
 list = false
 file_list = false
 reset = false
+diff = false
+create_overlays = false
 
 OptionParser.new do |parser|
+  parser.on("-c", "--create-overlays",
+    "Create the default YaST overlays") do |c|
+    create_overlays = c
+  end
+
   parser.on("-g", "--ghrepo GITHUB_REPO", "GitHub repository name") do |r|
     repo = r
 
@@ -182,6 +227,11 @@ OptionParser.new do |parser|
   parser.on("-b", "--branch BRANCH_OR_TAG",
     "Use the specified branch or tag (default: master)") do |b|
     branch = b
+  end
+
+  parser.on("-d", "--diff",
+    "Display diff of the modified files") do |d|
+    diff = d
   end
 
   parser.on("-o", "--overlay DIR",
@@ -214,22 +264,21 @@ end.parse!
 add_overlay(overlay) if !overlay.empty?
 
 if list
-  overlays = list_overlays
-
-  puts "Defined overlays:"
-  puts overlays
+  puts list_overlays
 end
 
 if file_list
-  upper = Pathname.new(File.join(OVERLAY_PREFIX, "upper"))
-  Dir["#{upper}/**/*"].each do |f|
-    next unless File.file?(f)
-    relative_path = Pathname.new(f).relative_path_from(upper)
-    parts = relative_path.split
-    parts[0] = parts.first.to_s.tr!("_", "/")
-    puts parts.join("/")
+  modified_files { |f, _modif, _orig| puts f}
+end
+
+if diff
+  modified_files do |f, _modif, orig|
+    next unless File.exist?(f) && File.exist?(orig)
+    system("diff -u #{orig.shellescape} #{f.shellescape}")
   end
 end
+
+add_default_overlays if create_overlays
 
 # validation
 if !repo.empty?
@@ -249,6 +298,7 @@ if !repo.empty?
     download_gh_archive(repo, branch, download_dir)
 
     Dir.mktmpdir do |target_dir|
+      add_default_overlays
       install_sources(download_dir, target_dir)
       copy_to_system(target_dir)
     end
