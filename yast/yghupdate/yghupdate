@@ -90,18 +90,29 @@ def add_overlay(dir)
     "upperdir=#{upperdir.shellescape},workdir=#{workdir.shellescape} #{dir.shellescape}")
 end
 
-def download_gh_archive(repo, branch, dir)
-  url = "https://github.com/#{repo}/archive/#{branch}.tar.gz"
+def download_tar_archive(url, dir)
   msg("Downloading #{url}...")
   Dir.chdir(dir) do
-    system("curl -L -s #{url.shellescape} | tar --strip-components=1 -xz")
+    system("curl -L -s #{url.shellescape} | tar -xz")
   end
+end
+
+def download_gh_archive(repo, branch, dir)
+  url = "https://github.com/#{repo}/archive/#{branch}.tar.gz"
+  download_tar_archive(url, dir)
 end
 
 def install_sources(src, target)
   msg("Preparing files...")
-  Dir.chdir(src) do
-    `rake install DESTDIR=#{target.shellescape} 2> /dev/null`
+  rakefile = Dir["#{src}/**/Rakefile"].first
+
+  if rakefile
+    src = File.dirname(rakefile)
+    Dir.chdir(src) do
+      `rake install DESTDIR=#{target.shellescape} 2> /dev/null`
+    end
+  else
+    $stderr.puts "ERROR: Rakefile not found"
   end
 end
 
@@ -110,6 +121,7 @@ def skip_file?(file)
 end
 
 def copy_to_system(src)
+  msg("Copying to system...")
   src_path = Pathname.new(src)
   cnt = 0
   Find.find(src) do |path|
@@ -172,7 +184,7 @@ def reset_all
   end
 
   Dir["#{File.join(OVERLAY_PREFIX, "original")}/*"].each do |o|
-    puts "umount #{o}"
+    message("umount #{o}")
     `umount #{o.shellescape}`
   end
 
@@ -210,6 +222,7 @@ file_list = false
 reset = false
 diff = false
 create_overlays = false
+sync = nil
 
 OptionParser.new do |parser|
   parser.on("-c", "--create-overlays",
@@ -257,6 +270,11 @@ OptionParser.new do |parser|
     reset = true
   end
 
+  parser.on("-s", "--sync URL", "Sync from server") do |s|
+    sync = s
+    sync = "http://#{sync}:8000" if !sync.start_with?("http")
+  end
+
   parser.on("-v", "--verbose", "Verbose output") do |v|
   end
 end.parse!
@@ -281,7 +299,7 @@ end
 add_default_overlays if create_overlays
 
 # validation
-if !repo.empty?
+if !repo.empty? || !sync.empty?
   if !gem_installed?(NEEDED_GEM)
     msg("Installing missing Ruby gems...")
     add_overlay(Gem.dir)
@@ -295,7 +313,11 @@ if !repo.empty?
   end
 
   Dir.mktmpdir do |download_dir|
-    download_gh_archive(repo, branch, download_dir)
+    if !repo.empty?
+      download_gh_archive(repo, branch, download_dir)
+    else
+      download_tar_archive(sync, download_dir)
+    end
 
     Dir.mktmpdir do |target_dir|
       add_default_overlays
