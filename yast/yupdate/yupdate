@@ -212,7 +212,19 @@ def modified_files(&block)
   end
 end
 
-check_env
+
+VERSION = "0.0.1"
+DEFAULT_PORT = 8000
+RAKE_ARCHIVE = "archive/current.tar.gz"
+
+def version_sha
+  require "digest/sha1"
+  Digest::SHA1.hexdigest(File.read($PROGRAM_NAME))[0..7]
+end
+
+def version_string
+  "#{VERSION} (#{version_sha})"
+end
 
 repo = ""
 branch = "master"
@@ -272,12 +284,21 @@ OptionParser.new do |parser|
 
   parser.on("-s", "--sync URL", "Sync from server") do |s|
     sync = s
-    sync = "http://#{sync}:8000" if !sync.start_with?("http")
+    sync = "http://#{sync}:#{DEFAULT_PORT}/#{RAKE_ARCHIVE}" if !sync.start_with?("http")
   end
 
   parser.on("-v", "--verbose", "Verbose output") do |v|
   end
+
+  parser.on("", "--version", "Print the script version") do |vers|
+    if vers
+      puts "Version: #{version_string}"
+      exit 0
+    end
+  end
 end.parse!
+
+check_env
 
 add_overlay(overlay) if !overlay.empty?
 
@@ -299,7 +320,7 @@ end
 add_default_overlays if create_overlays
 
 # validation
-if !repo.empty? || !sync.empty?
+if !repo.empty? || sync
   if !gem_installed?(NEEDED_GEM)
     msg("Installing missing Ruby gems...")
     add_overlay(Gem.dir)
