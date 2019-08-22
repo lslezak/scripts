@@ -25,6 +25,8 @@ YAST_OVERLAYS = [
   end
 ]
 
+SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast/yupdate/yupdate"
+
 # globs for ignored files
 SKIP_FILES = [
   # skip documentation
@@ -145,6 +147,7 @@ def copy_to_system(src)
         next
       else
         add_overlay(system_dir)
+        File.rm_f(system_file) if File.symlink?(systemfile)
         FileUtils.cp(path, system_file)
         msg("Updated: #{system_file}")
         cnt += 1
@@ -186,7 +189,7 @@ def reset_all
   end
 
   Dir["#{File.join(OVERLAY_PREFIX, "original")}/*"].each do |o|
-    message("umount #{o}")
+    msg("umount #{o}")
     `umount #{o.shellescape}`
   end
 
@@ -214,6 +217,24 @@ def modified_files(&block)
   end
 end
 
+def update_self
+  msg("Downloading #{SELF_UPDATE_URL}...")
+  new_content = `curl -L -s #{SELF_UPDATE_URL}`
+  if $?.success?
+    old_content = File.read($PROGRAM_NAME)
+
+    if old_content == new_content
+      msg("No changes found, the file is up to date")
+    else
+      add_overlay(File.dirname($PROGRAM_NAME))
+      print "Updating the script from version #{version_string} to"
+      File.write($PROGRAM_NAME, new_content)
+      system("#{$PROGRAM_NAME} --version")
+    end
+  else
+    $stderr.puts "ERROR: Download failed"
+  end
+end
 
 VERSION = "0.0.1"
 DEFAULT_PORT = 8000
@@ -237,6 +258,7 @@ reset = false
 diff = false
 create_overlays = false
 sync = nil
+self_update = false
 
 OptionParser.new do |parser|
   parser.on("-c", "--create-overlays",
@@ -289,12 +311,16 @@ OptionParser.new do |parser|
     sync = "http://#{sync}:#{DEFAULT_PORT}/#{RAKE_ARCHIVE}" if !sync.start_with?("http")
   end
 
+  parser.on("-u", "--self-update", "Selfupdate from GitHub") do |u|
+    self_update = u
+  end
+
   parser.on("-v", "--verbose", "Verbose output") do |v|
   end
 
   parser.on("", "--version", "Print the script version") do |vers|
     if vers
-      puts "Version: #{version_string}"
+      puts version_string
       exit 0
     end
   end
@@ -303,6 +329,8 @@ end.parse!
 check_env
 
 add_overlay(overlay) if !overlay.empty?
+
+update_self if self_update
 
 if list
   puts list_overlays
