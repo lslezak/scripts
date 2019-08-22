@@ -29,6 +29,8 @@ YAST_OVERLAYS = [
 SKIP_FILES = [
   # skip documentation
   "/usr/share/doc/*",
+  # skip manual pages
+  "/usr/share/man/*",
   # skip sysconfig templates
   "/usr/share/fillup-templates/*"
 ].freeze
