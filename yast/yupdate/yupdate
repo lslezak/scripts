@@ -5,6 +5,7 @@
 
 require "fileutils"
 require "find"
+require "json"
 require "optparse"
 require "pathname"
 require "shellwords"
@@ -36,6 +37,18 @@ SKIP_FILES = [
   # skip sysconfig templates
   "/usr/share/fillup-templates/*"
 ].freeze
+
+repo = ""
+branch = "master"
+overlay = ""
+list = false
+file_list = false
+reset = false
+diff = false
+create_overlays = false
+sync = nil
+self_update = false
+list_servers = nil
 
 def msg(message)
   puts message
@@ -178,6 +191,15 @@ def list_overlays
   end
 end
 
+def list_remote_servers(url)
+  u = URI(url)
+  u.path = ""
+  JSON.parse(`curl -s #{url.shellescape}`).map do |port|
+    u.port = port
+    u.to_s
+  end
+end
+
 def reset_all
   overlays = list_overlays
   return if overlays.empty?
@@ -249,17 +271,6 @@ def version_string
   "#{VERSION} (#{version_sha})"
 end
 
-repo = ""
-branch = "master"
-overlay = ""
-list = false
-file_list = false
-reset = false
-diff = false
-create_overlays = false
-sync = nil
-self_update = false
-
 OptionParser.new do |parser|
   parser.on("-c", "--create-overlays",
     "Create the default YaST overlays") do |c|
@@ -302,6 +313,11 @@ OptionParser.new do |parser|
     file_list = true
   end
 
+  parser.on("-o", "--other-servers URL", "List other running remote servers") do |r|
+    list_servers = r
+    list_servers = "http://#{r}:#{DEFAULT_PORT}/servers/index.json" if !list_servers.start_with?("http")
+  end
+
   parser.on("-r", "--reset", "Remove all overlays, reset the system to the original state") do |_l|
     reset = true
   end
@@ -331,6 +347,10 @@ check_env
 add_overlay(overlay) if !overlay.empty?
 
 update_self if self_update
+
+if list_servers
+  puts list_remote_servers(list_servers)
+end
 
 if list
   puts list_overlays
