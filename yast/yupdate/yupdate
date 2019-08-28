@@ -30,6 +30,8 @@ SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast
 
 # globs for ignored files
 SKIP_FILES = [
+  # vim temporary files
+  "*/.*swp",
   # skip documentation
   "/usr/share/doc/*",
   # skip manual pages
