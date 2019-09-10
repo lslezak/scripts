@@ -162,7 +162,7 @@ def copy_to_system(src)
         next
       else
         add_overlay(system_dir)
-        File.rm_f(system_file) if File.symlink?(system_file)
+        FileUtils.rm_f(system_file) if File.symlink?(system_file)
         FileUtils.cp(path, system_file)
         msg("Updated: #{system_file}")
         cnt += 1
