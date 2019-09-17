@@ -11,6 +11,21 @@ require "pathname"
 require "shellwords"
 require "tmpdir"
 
+
+# commands
+#   yupdate github <repo> <branch>
+#   yupdate from <url>
+#
+#   yupdate overlay list
+#   yupdate overlay create defaults
+#   yupdate overlay create <dir>
+#   yupdate overlay reset
+#
+#   yupdate selfupdate
+#
+#   yupdate version
+
+
 # we need this gem for running the "rake install" command
 NEEDED_GEM = "yast-rake".freeze
 OVERLAY_PREFIX = "/var/lib/YaST2/overlayfs".freeze
