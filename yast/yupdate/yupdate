@@ -12,14 +12,16 @@ require "shellwords"
 require "tmpdir"
 
 
-# commands
+# commands:
 #   yupdate github <repo> <branch>
-#   yupdate from <url>
+#   yupdate url <url>
+#   yupdate server <hostname:port>
 #
 #   yupdate overlay list
 #   yupdate overlay create defaults
 #   yupdate overlay create <dir>
 #   yupdate overlay reset
+#   yupdate overlay diff
 #
 #   yupdate selfupdate
 #
@@ -47,6 +49,8 @@ SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast
 SKIP_FILES = [
   # vim temporary files
   "*/.*swp",
+  # backup files
+  "*/*.bak",
   # skip documentation
   "/usr/share/doc/*",
   # skip manual pages
