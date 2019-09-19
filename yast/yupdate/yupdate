@@ -13,14 +13,14 @@ require "tmpdir"
 
 
 # commands:
-#   yupdate github <repo> <branch>
-#   yupdate url <url>
-#   yupdate server <hostname:port>
+#   yupdate patch <github_repo> <branch>
+#   yupdate patch <url>
+#   yupdate patch <hostname:port>
 #
 #   yupdate overlay list
-#   yupdate overlay create defaults
-#   yupdate overlay create <dir>
+#   yupdate overlay create [<dir>]
 #   yupdate overlay reset
+#   yupdate overlay files
 #   yupdate overlay diff
 #
 #   yupdate selfupdate
