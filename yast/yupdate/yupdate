@@ -12,7 +12,7 @@ require "shellwords"
 require "tmpdir"
 
 
-# commands:
+# TODO: commands:
 #   yupdate patch <github_repo> <branch>
 #   yupdate patch <url>
 #   yupdate patch <hostname:port>
@@ -27,21 +27,115 @@ require "tmpdir"
 #
 #   yupdate version
 
+# Class for managing the overlayfs mounts
+class OverlayFS
+  OVERLAY_PREFIX = "/var/lib/YaST2/overlayfs".freeze
+
+  YAST_OVERLAYS = [
+    "/usr/lib/YaST2",
+    "/usr/lib64/YaST2",
+    "/usr/share/autoinstall",
+    "/usr/share/applications/YaST2"
+  ]
+
+  attr_reader :dir
+
+  def initialize(dir)
+    @dir = dir
+  end
+
+  def create
+    return if File.writable?(dir)
+    msg("Adding overlay for #{dir}...")
+
+    FileUtils.mkdir_p(upperdir)
+    FileUtils.mkdir_p(workdir)
+    FileUtils.mkdir_p(origdir)
+
+    # make the original content available in a separate directory
+    system("mount --bind #{dir.shellescape} #{origdir.shellescape}")
+    # mark the mount as a private otherwise the overlay would propagate
+    # through the bind mount and we would see the changed content here
+    system("mount --make-private #{origdir.shellescape} ")
+
+    system("mount -t overlay overlay -o lowerdir=#{dir.shellescape}," \
+      "upperdir=#{upperdir.shellescape},workdir=#{workdir.shellescape} #{dir.shellescape}")
+  end
+
+  def delete
+    puts "umount #{dir}"
+    system "umount #{dir.shellescape}"
+
+    puts "umount #{origdir}"
+    system "umount #{origdir.shellescape}"
+
+    FileUtils.rm_rf([ upperdir, workdir, origdir ])
+  end
+
+  def print_files
+    modified_files { |f, _modif, _orig| puts f}
+  end
+
+  def print_diff
+    modified_files do |f, _modif, orig|
+      next unless File.exist?(f) && File.exist?(orig)
+      system("diff -u #{orig.shellescape} #{f.shellescape}")
+    end
+  end
+
+  def self.find_all
+    mounts = `mount`
+    mounts.lines.each_with_object([]) do |line, arr|
+      arr << new(Regexp.last_match[1]) if line =~ /^overlay on (.*) type overlay /
+    end
+  end
+
+  def self.default_overlays
+    yast_overlays.map{ |o| new(o) }
+  end
+
+private
+
+  def dir_name
+    dir.tr("/", "_")
+  end
+
+  def upperdir
+    File.join(OVERLAY_PREFIX, "upper", dir_name)
+  end
+
+  def workdir
+    File.join(OVERLAY_PREFIX, "workdir", dir_name)
+  end
+
+  def origdir
+    File.join(OVERLAY_PREFIX, "original", dir_name)
+  end
+
+  def modified_files(&block)
+    return unless block_given?
+
+    Find.find(upperdir) do |f|
+      next unless File.file?(f)
+      relative_path = Pathname.new(f).relative_path_from(upperdir)
+      original_path = File.join(origdir, relative_path)
+      parts = relative_path.split
+      parts[0] = parts.first.to_s.tr("_", "/").gsub("//", "/")
+      block.call(File.join(*parts), f, original_path)
+    end
+  end
+
+  def yast_overlays
+    # /usr/share/YaST2/ needs to be handled specially, it is writable
+    # but contains symlinks to read-only subdirectories
+    YAST_OVERLAYS + Dir["/usr/share/YaST2/*"].each_with_object([]) do |f, arr|
+      arr << f if File.directory?(f) && !File.writable?(f)
+    end
+  end
+end
 
 # we need this gem for running the "rake install" command
 NEEDED_GEM = "yast-rake".freeze
-OVERLAY_PREFIX = "/var/lib/YaST2/overlayfs".freeze
-YAST_OVERLAYS = [
-  "/usr/lib/YaST2",
-  "/usr/lib64/YaST2",
-  "/usr/share/autoinstall",
-  "/usr/share/applications/YaST2",
-  # /usr/share/YaST2/ needs to be handled specially, it is writable
-  # but contains symlinks to read-only subdirectories
-  *Dir["/usr/share/YaST2/*"].each_with_object([]) do |f, arr|
-    arr << f if File.directory?(f) && !File.writable?(f)
-  end
-]
 
 SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast/yupdate/yupdate"
 
