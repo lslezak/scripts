@@ -3,6 +3,7 @@
 # This script updates the YaST files in the inst-sys
 # with the files from GitHub.
 
+require "digest/sha1"
 require "fileutils"
 require "find"
 require "json"
@@ -26,6 +27,20 @@ require "tmpdir"
 #   yupdate selfupdate
 #
 #   yupdate version
+#
+#   yupdate help
+
+class Version
+  VERSION = "0.0.1"
+
+  def self.sha
+    Digest::SHA1.hexdigest(File.read($PROGRAM_NAME))[0..7]
+  end
+
+  def self.string
+    "#{VERSION} (#{sha})"
+  end
+end
 
 # Class for managing the overlayfs mounts
 class OverlayFS
@@ -125,7 +140,7 @@ private
     end
   end
 
-  def yast_overlays
+  def self.yast_overlays
     # /usr/share/YaST2/ needs to be handled specially, it is writable
     # but contains symlinks to read-only subdirectories
     YAST_OVERLAYS + Dir["/usr/share/YaST2/*"].each_with_object([]) do |f, arr|
@@ -133,6 +148,98 @@ private
     end
   end
 end
+
+class Downloader
+  def download_tar_archive(url, dir)
+    msg("Downloading #{url}...")
+    Dir.chdir(dir) do
+      system("curl -L -s #{url.shellescape} | tar -xz")
+    end
+  end
+  
+  def download_gh_archive(repo, branch, dir)
+    url = "https://github.com/#{repo}/archive/#{branch}.tar.gz"
+    download_tar_archive(url, dir)
+  end
+end
+
+class OverlayCommand
+  def initialize(argv)
+    @argv = argv
+  end
+
+  def run
+    command = @argv.shift
+    
+    case command
+    when "list"
+      puts OverlayFS.find_all.map(&:dir)
+    when "create"
+      dir = @argv.shift
+
+      if dir
+        ovfs = OverlayFS.new(dir)
+        ovfs.create
+      else
+        OverlayFS.default_overlays.map(&:create)
+      end
+    when "reset"
+      OverlayFS.find_all.map(&:delete)
+    when "files"
+      OverlayFS.find_all.map(&:print_files)
+    when "diff"
+      OverlayFS.find_all.map(&:print_diff)
+    else
+      InvalidCommand.new(command)
+    end
+  end
+end
+
+
+class Options
+  def self.parse(argv)
+    command = argv.shift
+
+    case command
+    when "version"
+      VersionCommand.new
+    when "overlay"
+      OverlayCommand.new(argv)
+    else
+      InvalidCommand.new(command)
+    end
+  end
+end
+
+class VersionCommand
+  def run
+    puts "yupdate #{Version.string}"
+  end
+end
+
+class InvalidCommand
+  def initialize(cmd)
+    @cmd = cmd
+  end
+
+  def run
+    puts "invalid command: #{cmd}"
+    1
+  end
+private
+  attr_reader :cmd
+end
+
+class Application
+  def run(argv = ARGV)
+    cmd = Options.parse(argv)
+    cmd.run
+  end
+end
+
+app = Application.new
+app.run
+
 
 # we need this gem for running the "rake install" command
 NEEDED_GEM = "yast-rake".freeze
