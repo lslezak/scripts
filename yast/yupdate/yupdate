@@ -12,6 +12,7 @@ require "pathname"
 require "shellwords"
 require "tmpdir"
 
+SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast/yupdate/yupdate"
 
 # TODO: commands:
 #   yupdate patch <github_repo> <branch>
@@ -156,7 +157,7 @@ class Downloader
       system("curl -L -s #{url.shellescape} | tar -xz")
     end
   end
-  
+
   def download_gh_archive(repo, branch, dir)
     url = "https://github.com/#{repo}/archive/#{branch}.tar.gz"
     download_tar_archive(url, dir)
@@ -170,7 +171,7 @@ class OverlayCommand
 
   def run
     command = @argv.shift
-    
+
     case command
     when "list"
       puts OverlayFS.find_all.map(&:dir)
@@ -195,6 +196,30 @@ class OverlayCommand
   end
 end
 
+class HelpCommand
+  def run
+    puts "This is a helper script for updating the YaST installer in the installation system."
+    puts
+    puts "Usage:"
+    puts "  #{File.basename($PROGRAM_NAME)} patch <github_repo> <branch>"
+    puts "  #{File.basename($PROGRAM_NAME)} patch <url>"
+    puts "  #{File.basename($PROGRAM_NAME)} patch <hostname[:port]>"
+    puts "  #{File.basename($PROGRAM_NAME)} overlay create [<dir>] \t Create a new writable overlay for directory <dir>"
+    puts "  #{File.basename($PROGRAM_NAME)} overlay list \t Print the created writable overlays"
+    puts "  #{File.basename($PROGRAM_NAME)} overlay reset \t Remove all writable overlays, restore the system to the original state"
+    puts "  #{File.basename($PROGRAM_NAME)} overlay files \t Print the changed files (added or removed files are not listed)"
+    puts "  #{File.basename($PROGRAM_NAME)} overlay diff"
+    puts "  #{File.basename($PROGRAM_NAME)} selfupdate \t Update the script itself from"
+    puts "  \t\t\t #{SELF_UPDATE_URL}"
+    puts "  #{File.basename($PROGRAM_NAME)} version \t Print the script version"
+    puts "  #{File.basename($PROGRAM_NAME)} help \t\t Print this help"
+    puts
+    puts "WARNING: This script is intended for testing and development purposes,"
+    puts "         using this tool makes the installation not supported!"
+    puts
+    puts "See more details in [FIXME URL]"
+  end
+end
 
 class Options
   def self.parse(argv)
@@ -205,6 +230,12 @@ class Options
       VersionCommand.new
     when "overlay"
       OverlayCommand.new(argv)
+    when "patch"
+      PatchCommand.new(argv)
+    when "selfupdate"
+      SelfUpdateCommand.new
+    when "help", "--help", nil
+      HelpCommand.new
     else
       InvalidCommand.new(command)
     end
@@ -223,7 +254,7 @@ class InvalidCommand
   end
 
   def run
-    puts "invalid command: #{cmd}"
+    puts "ERROR: Invalid command: #{cmd}"
     1
   end
 private
@@ -243,8 +274,6 @@ app.run
 
 # we need this gem for running the "rake install" command
 NEEDED_GEM = "yast-rake".freeze
-
-SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast/yupdate/yupdate"
 
 # globs for ignored files
 SKIP_FILES = [
