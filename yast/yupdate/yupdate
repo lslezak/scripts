@@ -31,6 +31,15 @@ SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast
 #
 #   yupdate help
 
+def msg(message)
+  puts message
+end
+
+def details(message)
+  # FIXME: only when verbose is set
+  # puts message if ....
+end
+
 class Version
   VERSION = "0.0.1"
 
@@ -57,7 +66,8 @@ class OverlayFS
   attr_reader :dir
 
   def initialize(dir)
-    @dir = dir
+    # expand symlinks
+    @dir = File.realpath(dir)
   end
 
   def create
@@ -113,7 +123,8 @@ class OverlayFS
 private
 
   def dir_name
-    dir.tr("/", "_")
+    # escape _ (double) for correct reverse conversion
+    dir.gsub("_", "__").tr("/", "_")
   end
 
   def upperdir
@@ -133,11 +144,13 @@ private
 
     Find.find(upperdir) do |f|
       next unless File.file?(f)
-      relative_path = Pathname.new(f).relative_path_from(upperdir)
+      upperdir_path = Pathname.new(upperdir)
+      relative_path = Pathname.new(f).relative_path_from(upperdir_path)
       original_path = File.join(origdir, relative_path)
-      parts = relative_path.split
-      parts[0] = parts.first.to_s.tr("_", "/").gsub("//", "/")
-      block.call(File.join(*parts), f, original_path)
+      # unescape _
+      pth = upperdir_path.basename.to_s.gsub(/([^_])_([^_])/, "\\1/\\2")
+        .sub(/\A_/, "/").gsub("__", "_").gsub("//", "/")
+      block.call(File.join(pth, relative_path), f, original_path)
     end
   end
 
@@ -198,26 +211,28 @@ end
 
 class HelpCommand
   def run
-    puts "This is a helper script for updating the YaST installer in the installation system."
-    puts
-    puts "Usage:"
-    puts "  #{File.basename($PROGRAM_NAME)} patch <github_repo> <branch>"
-    puts "  #{File.basename($PROGRAM_NAME)} patch <url>"
-    puts "  #{File.basename($PROGRAM_NAME)} patch <hostname[:port]>"
-    puts "  #{File.basename($PROGRAM_NAME)} overlay create [<dir>] \t Create a new writable overlay for directory <dir>"
-    puts "  #{File.basename($PROGRAM_NAME)} overlay list \t Print the created writable overlays"
-    puts "  #{File.basename($PROGRAM_NAME)} overlay reset \t Remove all writable overlays, restore the system to the original state"
-    puts "  #{File.basename($PROGRAM_NAME)} overlay files \t Print the changed files (added or removed files are not listed)"
-    puts "  #{File.basename($PROGRAM_NAME)} overlay diff"
-    puts "  #{File.basename($PROGRAM_NAME)} selfupdate \t Update the script itself from"
-    puts "  \t\t\t #{SELF_UPDATE_URL}"
-    puts "  #{File.basename($PROGRAM_NAME)} version \t Print the script version"
-    puts "  #{File.basename($PROGRAM_NAME)} help \t\t Print this help"
-    puts
-    puts "WARNING: This script is intended for testing and development purposes,"
-    puts "         using this tool makes the installation not supported!"
-    puts
-    puts "See more details in [FIXME URL]"
+    name = File.basename($PROGRAM_NAME)
+    puts <<-HELP
+This is a helper script for updating the YaST installer in the installation system.
+
+Usage:
+
+#{name} patch <github_repo> <branch>
+#{name} patch <url>
+#{name} patch <hostname[:port]>
+#{name} overlay create [<dir>]  Create a new writable overlay for directory <dir>
+#{name} overlay list            Print the created writable overlays
+#{name} overlay reset           Remove all writable overlays restore the system to the original state
+#{name} overlay files           Print the changed files (addd or removed files are not listed)
+#{name} overlay diff
+#{name} selfupdate              Update the script itself from
+        #{SELF_UPDATE_URL}
+#{name} version                 Print the script version
+#{name} help                    Print this help
+WARNING: This script is intended only for testing and development purposes,
+         using this tool makes the installation not supported!
+See more details in [FIXME URL]
+HELP
   end
 end
 
@@ -300,15 +315,6 @@ create_overlays = false
 sync = nil
 self_update = false
 list_servers = nil
-
-def msg(message)
-  puts message
-end
-
-def details(message)
-  # FIXME: only when verbose is set
-  # puts message if ....
-end
 
 def check_env
   mounts = `mount`
