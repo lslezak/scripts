@@ -186,8 +186,20 @@ class GemInstaller
   rescue Gem::LoadError
     false
   end
-  
+
   def install_gems(gem_names)
+    if !gem_installed?(NEEDED_GEM)
+      msg("Installing missing Ruby gems...")
+      add_overlay(Gem.dir)
+
+      gems = [NEEDED_GEM]
+      # handle the rake gem specifically, it is present in the system, but
+      # the /usr/bin/rake file is missing
+      gems << "rake" if !File.exist?("/usr/bin/rake")
+
+      install_gems(gems)
+    end
+
     system("gem install --no-document --no-format-exec #{gem_names.map(&:shellescape).join(" ")}")
   end
 end
@@ -210,7 +222,7 @@ class Installer
   def install_sources(src, target)
     msg("Preparing files...")
     rakefile = Dir["#{src}/**/Rakefile"].first
-  
+
     if rakefile
       src = File.dirname(rakefile)
       Dir.chdir(src) do
@@ -220,11 +232,11 @@ class Installer
       $stderr.puts "ERROR: Rakefile not found"
     end
   end
-  
+
   def skip_file?(file)
     SKIP_FILES.any? { |glob| File.fnmatch?(glob, file) }
   end
-  
+
   def copy_to_system(src)
     msg("Copying to system...")
     src_path = Pathname.new(src)
@@ -232,16 +244,16 @@ class Installer
     Find.find(src) do |path|
       # TODO: what about symlinks or empty directories?
       next unless File.file?(path)
-  
+
       relative_path = Pathname.new(path).relative_path_from(src_path).to_s
       system_file = File.absolute_path(relative_path, "/")
       system_dir = File.dirname(system_file)
-  
+
       if skip_file?(system_file)
         details("Skipping: #{system_file}")
         next
       end
-  
+
       if File.exist?(system_file)
         if FileUtils.identical?(system_file, path)
           details("Not modified: #{system_file}")
@@ -261,13 +273,13 @@ class Installer
           # FIXME: maybe an overlay is needed for the upper directory...
           FileUtils.mkdir_p(system_dir)
         end
-  
+
         FileUtils.cp(path, system_file)
         puts "Added: #{system_file}"
         cnt += 1
       end
     end
-  
+
     msg("Number of modified files: #{cnt}")
   end
 end
@@ -281,7 +293,7 @@ class SelfUpdater
     new_content = `curl -L -s #{SELF_UPDATE_URL}`
     if $?.success?
       old_content = File.read($PROGRAM_NAME)
-  
+
       if old_content == new_content
         msg("No changes found, the file is up to date")
       else
@@ -329,6 +341,16 @@ class OverlayCommand
   end
 end
 
+class InstSys
+  def check_env
+    mounts = `mount`
+    return if mounts =~ /^tmpfs on \/ type tmpfs/
+
+    $stderr.puts "ERROR: This script can only work in the installation system (int-sys)!"
+    exit 1
+  end
+end
+
 class HelpCommand
   def run
     name = File.basename($PROGRAM_NAME)
@@ -337,18 +359,23 @@ This is a helper script for updating the YaST installer in the installation syst
 
 Usage:
 
-#{name} patch <github_repo> <branch>
-#{name} patch <url>
-#{name} patch <hostname[:port]>
-#{name} overlay create [<dir>]  Create a new writable overlay for directory <dir>
-#{name} overlay list            Print the created writable overlays
-#{name} overlay reset           Remove all writable overlays restore the system to the original state
-#{name} overlay files           Print the changed files (addd or removed files are not listed)
-#{name} overlay diff
-#{name} selfupdate              Update the script itself from
-        #{SELF_UPDATE_URL}
-#{name} version                 Print the script version
-#{name} help                    Print this help
+#{name} <command>
+
+Commands:
+
+patch <github_repo> <branch>
+patch <url>
+patch <hostname[:port]>
+overlay create [<dir>]  Create a new writable overlay for directory <dir>
+overlay list            Print the created writable overlays
+overlay reset           Remove all writable overlays restore the system to the original state
+overlay files           Print the changed files (addd or removed files are not listed)
+overlay diff
+selfupdate              Update the script itself from
+                        #{SELF_UPDATE_URL}
+version                 Print the script version
+help                    Print this help
+
 WARNING: This script is intended only for testing and development purposes,
          using this tool makes the installation not supported!
 See more details in [FIXME URL]
@@ -419,14 +446,6 @@ create_overlays = false
 sync = nil
 self_update = false
 list_servers = nil
-
-def check_env
-  mounts = `mount`
-  return if mounts =~ /^tmpfs on \/ type tmpfs/
-
-  $stderr.puts "ERROR: This script can only work in the installation system (int-sys)!"
-  exit 1
-end
 
 
 def list_remote_servers(url)
@@ -508,15 +527,6 @@ end.parse!
 # validation
 if !repo.empty? || sync
   if !gem_installed?(NEEDED_GEM)
-    msg("Installing missing Ruby gems...")
-    add_overlay(Gem.dir)
-
-    gems = [NEEDED_GEM]
-    # handle the rake gem specifically, it is present in the system, but
-    # the /usr/bin/rake file is missing
-    gems << "rake" if !File.exist?("/usr/bin/rake")
-
-    install_gems(gems)
   end
 
   Dir.mktmpdir do |download_dir|
