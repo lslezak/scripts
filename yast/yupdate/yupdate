@@ -187,20 +187,30 @@ class GemInstaller
     false
   end
 
+  def required_gems
+    gems = [NEEDED_GEM]
+    # handle the rake gem specifically, it is present in the system, but
+    # the /usr/bin/rake file is missing
+    gems << "rake" if !File.exist?("/usr/bin/rake")
+    gems
+  end
+
+  def install_required_gems
+    install_gems(required_gems)
+  end
+
   def install_gems(gem_names)
-    if !gem_installed?(NEEDED_GEM)
-      msg("Installing missing Ruby gems...")
-      add_overlay(Gem.dir)
+    gem_names.each do |g|
+      next if gem_installed?(g)
 
-      gems = [NEEDED_GEM]
-      # handle the rake gem specifically, it is present in the system, but
-      # the /usr/bin/rake file is missing
-      gems << "rake" if !File.exist?("/usr/bin/rake")
-
-      install_gems(gems)
+      add_gem_overlay
+      system("gem install --no-document --no-format-exec #{gem_names.map(&:shellescape).join(" ")}")
     end
+  end
 
-    system("gem install --no-document --no-format-exec #{gem_names.map(&:shellescape).join(" ")}")
+  def add_gem_overlay
+    overlay = OverlayFS.new(Gem.dir)
+    overlay.create
   end
 end
 
@@ -416,6 +426,62 @@ class SelfUpdateCommand
   end
 end
 
+class PatchCommand
+  def initialize(argv)
+    @argv = argv
+  end
+
+  def run
+    arg1 = @argv.shift
+    arg2 = @argv.shift
+
+    return 1 unless arg1
+
+    prepare_system
+
+    # update from github
+    if arg1 && arg2
+      install_from_github(arg1, arg2)
+    # upgrade from URL
+    elsif arg1.start_with?("http")
+      install_from_tar(arg1)
+    end
+  end
+
+  def install_from_github(repo, branch)
+    # add the default "yast" GitHub organization if missing
+    repo = "yast/#{repo}" unless repo.include?("/")
+
+    Dir.mktmpdir do |download_dir|
+      d = Downloader.new
+      d.download_gh_archive(repo, branch, download_dir)
+      install_sources(download_dir)
+    end
+  end
+
+  def install_from_tar(url)
+    Dir.mktmpdir do |download_dir|
+      d = Downloader.new
+      d.download_tar_archive(url, download_dir)
+      install_sources(download_dir)
+    end
+  end
+
+  def install_sources(src_dir)
+    Dir.mktmpdir do |target_dir|
+      i = Installer.new
+      i.install_sources(src_dir, target_dir)
+      i.copy_to_system(target_dir)
+    end
+  end
+
+  def prepare_system
+    OverlayFS.default_overlays.map(&:create)
+    g = GemInstaller.new
+    g.install_required_gems
+  end
+end
+
 class InvalidCommand
   def initialize(cmd)
     @cmd = cmd
@@ -454,18 +520,6 @@ DEFAULT_PORT = 8000
 RAKE_ARCHIVE = "archive/current.tar.gz"
 
 OptionParser.new do |parser|
-  parser.on("-g", "--ghrepo GITHUB_REPO", "GitHub repository name") do |r|
-    repo = r
-
-    # add the default "yast" GitHub organization if missing
-    repo = "yast/#{repo}" unless repo.include?("/")
-  end
-
-  parser.on("-b", "--branch BRANCH_OR_TAG",
-    "Use the specified branch or tag (default: master)") do |b|
-    branch = b
-  end
-
   parser.on("-o", "--other-servers URL", "List other running remote servers") do |r|
     list_servers = r
     list_servers = "http://#{r}:#{DEFAULT_PORT}/servers/index.json" if !list_servers.start_with?("http")
@@ -475,27 +529,4 @@ OptionParser.new do |parser|
     sync = s
     sync = "http://#{sync}:#{DEFAULT_PORT}/#{RAKE_ARCHIVE}" if !sync.start_with?("http")
   end
-
-  parser.on("-v", "--verbose", "Verbose output") do |v|
-  end
 end.parse!
-
-# validation
-if !repo.empty? || sync
-  if !gem_installed?(NEEDED_GEM)
-  end
-
-  Dir.mktmpdir do |download_dir|
-    if !repo.empty?
-      download_gh_archive(repo, branch, download_dir)
-    else
-      download_tar_archive(sync, download_dir)
-    end
-
-    Dir.mktmpdir do |target_dir|
-      add_default_overlays
-      install_sources(download_dir, target_dir)
-      copy_to_system(target_dir)
-    end
-  end
-end
