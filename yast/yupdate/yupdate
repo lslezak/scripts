@@ -13,7 +13,15 @@ require "tmpdir"
 
 SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast/yupdate/yupdate"
 
-# TODO: commands:
+# TODO:
+#  - use the native Net::HTTP instead of the external curl for downloading
+#    (http://ruby-doc.org/stdlib/libdoc/net/http/rdoc/classes/Net/HTTP.html)
+#  - logging (to y2log so we can detect modified installer)
+#  - allow patching from a single server (optionally disable the server discovery)
+#  - add comments, code cleanup
+#  - verbose/quiet progress
+
+# Commands:
 #   yupdate patch <github_repo> <branch>
 #   yupdate patch <url>
 #   yupdate patch <hostname:port>
@@ -40,14 +48,11 @@ def details(message)
 end
 
 class Version
-  VERSION = "0.0.1"
-
-  def self.sha
-    Digest::SHA1.hexdigest(File.read($PROGRAM_NAME))[0..7]
-  end
+  STRING = "0.0.1"
 
   def self.string
-    "#{VERSION} (#{sha})"
+    sha = Digest::SHA1.hexdigest(File.read($PROGRAM_NAME))[0..7]
+    "#{STRING} (#{sha})"
   end
 end
 
@@ -309,7 +314,7 @@ class SelfUpdater
       else
         o = OverlayFS.new(File.dirname($PROGRAM_NAME))
         o.create
-        print "Updating the script from version #{Version::VERSION} to "
+        print "Updating the script from version #{Version.string} to "
         File.write($PROGRAM_NAME, new_content)
         system("#{$PROGRAM_NAME} --version")
       end
@@ -458,12 +463,15 @@ class PatchCommand
 
     prepare_system
 
-    # update from github
     if arg1 && arg2
+      # update from github
       install_from_github(arg1, arg2)
-    # upgrade from URL
     elsif arg1.start_with?("http")
+      # upgrade from URL
       install_from_tar(arg1)
+    else
+      # otherwise treat it as a hostname providing a tarball server
+      install_from_servers(arg1)
     end
   end
 
@@ -483,6 +491,17 @@ class PatchCommand
       d = Downloader.new
       d.download_tar_archive(url, download_dir)
       install_sources(download_dir)
+    end
+  end
+
+  def install_from_servers(hostname)
+    remote = RemoteServer.new
+    servers = remote.find(hostname)
+
+    servers.each do |s|
+      puts "Installing from #{s}..."
+      url = "#{s}/archive/current.tar.gz"
+      install_from_tar(url)
     end
   end
 
@@ -514,13 +533,6 @@ private
   attr_reader :cmd
 end
 
-class Application
-  def run(argv = ARGV)
-    cmd = Options.parse(argv)
-    cmd.run
-  end
-end
-
 class RemoteServer
   def find(host)
     host += ":8000" unless host.include?(":")
@@ -535,22 +547,12 @@ class RemoteServer
   end
 end
 
+class Application
+  def run(argv = ARGV)
+    cmd = Options.parse(argv)
+    cmd.run
+  end
+end
+
 app = Application.new
 app.run
-
-exit 0
-
-DEFAULT_PORT = 8000
-RAKE_ARCHIVE = "archive/current.tar.gz"
-
-OptionParser.new do |parser|
-  parser.on("-o", "--other-servers URL", "List other running remote servers") do |r|
-    list_servers = r
-    list_servers = "http://#{r}:#{DEFAULT_PORT}/servers/index.json" if !list_servers.start_with?("http")
-  end
-
-  parser.on("-s", "--sync URL", "Sync from server") do |s|
-    sync = s
-    sync = "http://#{sync}:#{DEFAULT_PORT}/#{RAKE_ARCHIVE}" if !sync.start_with?("http")
-  end
-end.parse!
