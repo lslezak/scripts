@@ -20,8 +20,8 @@ SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast
 
 # TODO:
 #  - allow patching from a single server (optionally disable the server discovery)
+#  - error handling
 #  - add comments, code cleanup
-#  - verbose/quiet progress
 
 # Commands:
 #   yupdate patch <github_repo> <branch>
@@ -35,9 +35,7 @@ SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast
 #   yupdate overlay diff
 #
 #   yupdate selfupdate
-#
 #   yupdate version
-#
 #   yupdate help
 
 # A Ruby Logger which logs in usual Yast y2log format,
@@ -436,16 +434,14 @@ end
 class SelfUpdater
   include YLogger
 
-  SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast/yupdate/yupdate"
-
   def self.update!
-    log.info "Downloading #{SELF_UPDATE_URL}..."
-    new_content = `curl -L -s #{SELF_UPDATE_URL}`
-    if $?.success?
+    downloader = Downloader.new(SELF_UPDATE_URL)
+    new_content = downloader.download
+    if new_content && !new_content.empty?
       old_content = File.read($PROGRAM_NAME)
 
       if old_content == new_content
-        log.info "No changes found, the file is up to date"
+        log.info "No changes found, the script is up to date"
       else
         o = OverlayFS.new(File.dirname($PROGRAM_NAME))
         o.create
