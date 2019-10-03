@@ -7,11 +7,14 @@ require "digest/sha1"
 require "fileutils"
 require "find"
 require "json"
+require "logger"
 require "net/http"
 require "pathname"
 require "shellwords"
-require "uri"
+require "singleton"
+require "socket"
 require "tmpdir"
+require "uri"
 
 SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast/yupdate/yupdate"
 
@@ -38,13 +41,78 @@ SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast
 #
 #   yupdate help
 
-def msg(message)
-  puts message
+# A Ruby Logger which logs in usual Yast y2log formatting
+class YastLogger < Logger
+  # redefine the format to the y2log format
+  def format_message(severity, timestamp, progname, msg)
+    # remove the function name from the caller location
+    location = caller(3).first.gsub(/:in `.*'$/, "")
+    "#{timestamp.strftime(datetime_format)} #{severity} #{Socket.gethostname}(#{Process.pid}) #{progname} #{location} #{msg}\n"
+  end
+
+  def initialize(*args)
+    super
+    self.datetime_format = "%Y-%m-%d %H:%M:%S"
+    self.progname = "[#{File.basename($PROGRAM_NAME)}]"
+    self.level = ENV["Y2DEBUG"] == "1" ? Logger::DEBUG : Logger::INFO
+  end
+
+private
+
+  # redefine severity formatting
+  def format_severity(severity)
+    "<#{severity}>"
+  end
 end
 
-def details(message)
-  # FIXME: only when verbose is set
-  # puts message if ....
+# Provides the global shared Y2logger instance writing to /var/log/YaST2/y2log
+# (or ~/.y2log if the file is not writable).
+#
+# It can be used for logging external Ruby code into y2log
+class Y2Logger
+  include Singleton
+
+  Y2LOGFILE = "/var/log/YaST2/y2log".freeze
+
+  attr_accessor :log
+
+  def initialize
+    # Yast compatibility - log to home if not running as root
+    # (of if the file is not writable)
+    if File.exist?(Y2LOGFILE)
+      log_file = File.writable?(Y2LOGFILE) ? Y2LOGFILE : "#{ENV["HOME"]}/.y2log"
+    else
+      log_file = File.writable?(File.dirname(Y2LOGFILE)) ? Y2LOGFILE : "#{ENV["HOME"]}/.y2log"
+    end
+
+    # when creating the log file make sure it is readable only by the user
+    # (it might contain sensitive data like passwords, registration code, etc.)
+    File.write(log_file, "", perm: 0o600) unless File.exist?(log_file)
+
+    @log = YastLogger.new(log_file)
+  end
+end
+
+# This module provides access to Yast specific logging
+#
+# @example Use YastLogger in an easy way
+#   class Foo
+#     include YLogger
+#
+#     def foo
+#       # this will be logged into y2log using the usual y2log format
+#       log.debug "debug"
+#       log.error "error"
+#     end
+#   end
+module YLogger
+  def log
+    Y2Logger.instance.log
+  end
+
+  def self.included(base)
+    base.extend self
+  end
 end
 
 class Version
@@ -58,6 +126,8 @@ end
 
 # Class for managing the overlayfs mounts
 class OverlayFS
+  include YLogger
+
   OVERLAY_PREFIX = "/var/lib/YaST2/overlayfs".freeze
 
   YAST_OVERLAYS = [
@@ -76,7 +146,7 @@ class OverlayFS
 
   def create
     return if File.writable?(dir)
-    msg("Adding overlay for #{dir}...")
+    log.warn "Adding overlay for #{dir}..."
 
     FileUtils.mkdir_p(upperdir)
     FileUtils.mkdir_p(workdir)
@@ -93,10 +163,10 @@ class OverlayFS
   end
 
   def delete
-    puts "umount #{dir}"
+    log.debug "umount #{dir}"
     system "umount #{dir.shellescape}"
 
-    puts "umount #{origdir}"
+    log.debug "umount #{origdir}"
     system "umount #{origdir.shellescape}"
 
     FileUtils.rm_rf([ upperdir, workdir, origdir ])
@@ -168,6 +238,7 @@ private
 end
 
 class Downloader
+  include YLogger
   attr_reader :url
 
   def initialize(url)
@@ -175,6 +246,7 @@ class Downloader
   end
 
   def download(redirect = 10, &block)
+    log.info "Downloading #{url}"
     uri = URI(url)
 
     while redirect > 0
@@ -182,7 +254,7 @@ class Downloader
         request = Net::HTTP::Get.new uri
         http.request(request) do |response|
           if response.is_a?(Net::HTTPRedirection)
-            puts "Redirected to #{response["location"]}"
+            log.info "Redirected to #{response["location"]}"
             uri = URI(response["location"])
             redirect -= 1
           elsif response.is_a?(Net::HTTPSuccess)
@@ -274,6 +346,8 @@ class GemInstaller
 end
 
 class Installer
+  include YLogger
+
   # globs for ignored files
   SKIP_FILES = [
     # vim temporary files
@@ -289,7 +363,7 @@ class Installer
   ].freeze
 
   def install_sources(src, target)
-    msg("Preparing files...")
+    log.info "Preparing files..."
     rakefile = Dir["#{src}/**/Rakefile"].first
 
     if rakefile
@@ -307,7 +381,7 @@ class Installer
   end
 
   def copy_to_system(src)
-    msg("Copying to system...")
+    log.info "Copying to system..."
     src_path = Pathname.new(src)
     cnt = 0
     Find.find(src) do |path|
@@ -319,19 +393,19 @@ class Installer
       system_dir = File.dirname(system_file)
 
       if skip_file?(system_file)
-        details("Skipping: #{system_file}")
+        log.debug "Skipping: #{system_file}"
         next
       end
 
       if File.exist?(system_file)
         if FileUtils.identical?(system_file, path)
-          details("Not modified: #{system_file}")
+          log.debug "Not modified: #{system_file}"
           next
         else
           add_overlay(system_dir)
           FileUtils.rm_f(system_file) if File.symlink?(system_file)
           FileUtils.cp(path, system_file)
-          msg("Updated: #{system_file}")
+          log.info "Updated: #{system_file}"
           cnt += 1
         end
       else
@@ -344,12 +418,12 @@ class Installer
         end
 
         FileUtils.cp(path, system_file)
-        puts "Added: #{system_file}"
+        log.info "Added: #{system_file}"
         cnt += 1
       end
     end
 
-    msg("Number of modified files: #{cnt}")
+    log.info "Number of modified files: #{cnt}"
   end
 
   def add_overlay(dir)
@@ -359,23 +433,25 @@ class Installer
 end
 
 class SelfUpdater
+  include YLogger
 
   SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast/yupdate/yupdate"
 
   def self.update!
-    msg("Downloading #{SELF_UPDATE_URL}...")
+    log.info "Downloading #{SELF_UPDATE_URL}..."
     new_content = `curl -L -s #{SELF_UPDATE_URL}`
     if $?.success?
       old_content = File.read($PROGRAM_NAME)
 
       if old_content == new_content
-        msg("No changes found, the file is up to date")
+        log.info "No changes found, the file is up to date"
       else
         o = OverlayFS.new(File.dirname($PROGRAM_NAME))
         o.create
-        print "Updating the script from version #{Version.string} to "
         File.write($PROGRAM_NAME, new_content)
-        system("#{$PROGRAM_NAME} version")
+
+        new_version = `#{$PROGRAM_NAME} version`
+        log.info "Updating the script from version #{Version.string} to #{new_version}"
       end
     else
       $stderr.puts "ERROR: Download failed"
@@ -416,7 +492,7 @@ class OverlayCommand
 end
 
 class InstSys
-  def check_env
+  def self.check!
     mounts = `mount`
     return if mounts =~ /^tmpfs on \/ type tmpfs/
 
@@ -465,10 +541,13 @@ class Options
     when "version"
       VersionCommand.new
     when "overlay"
+      InstSys.check!
       OverlayCommand.new(argv)
     when "patch"
+      InstSys.check!
       PatchCommand.new(argv)
     when "selfupdate"
+      InstSys.check!
       SelfUpdateCommand.new
     when "servers"
       ServersCommand.new(argv)
@@ -482,7 +561,7 @@ end
 
 class VersionCommand
   def run
-    puts "yupdate #{Version.string}"
+    puts "#{File.basename($PROGRAM_NAME)} #{Version.string}"
   end
 end
 
