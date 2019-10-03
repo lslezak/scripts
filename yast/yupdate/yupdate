@@ -7,15 +7,15 @@ require "digest/sha1"
 require "fileutils"
 require "find"
 require "json"
+require "net/http"
 require "pathname"
 require "shellwords"
+require "uri"
 require "tmpdir"
 
 SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast/yupdate/yupdate"
 
 # TODO:
-#  - use the native Net::HTTP instead of the external curl for downloading
-#    (http://ruby-doc.org/stdlib/libdoc/net/http/rdoc/classes/Net/HTTP.html)
 #  - logging (to y2log so we can detect modified installer)
 #  - allow patching from a single server (optionally disable the server discovery)
 #  - add comments, code cleanup
@@ -168,16 +168,70 @@ private
 end
 
 class Downloader
-  def download_tar_archive(url, dir)
-    msg("Downloading #{url}...")
-    Dir.chdir(dir) do
-      system("curl -L -s #{url.shellescape} | tar -xz")
-    end
+  attr_reader :url
+
+  def initialize(url)
+    @url = url
   end
 
-  def download_gh_archive(repo, branch, dir)
-    url = "https://github.com/#{repo}/archive/#{branch}.tar.gz"
-    download_tar_archive(url, dir)
+  def download(redirect = 10, &block)
+    uri = URI(url)
+
+    while redirect > 0
+      Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.is_a?(URI::HTTPS)) do |http|
+        request = Net::HTTP::Get.new uri
+        http.request(request) do |response|
+          if response.is_a?(Net::HTTPRedirection)
+            puts "Redirected to #{response["location"]}"
+            uri = URI(response["location"])
+            redirect -= 1
+          elsif response.is_a?(Net::HTTPSuccess)
+            if block_given?
+              return block.call(response)
+            else
+              return response.read_body
+            end
+          else
+            puts "Download failed, error code: #{response.code}"
+            return
+          end
+        end
+      end
+    end
+  end
+end
+
+class TarballDownloader < Downloader
+  def initialize(url)
+    super
+  end
+
+  def extract_to(dir)
+    download do |response|
+      if response["content-type"] =~ /application\/(x-|)gzip/
+        IO.popen(["tar", "-C", dir, "-xz"], "wb") do |io|
+          response.read_body do |chunk|
+            io.write chunk
+          end
+        end
+      else
+        puts "Unknown MIME type: #{response["content-type"]}"
+      end
+    end
+  end
+end
+
+class GithubDownloader < TarballDownloader
+  attr_reader :repo, :branch
+
+  def initialize(repo, branch)
+    super("https://github.com/#{repo}/archive/#{branch}.tar.gz")
+    @repo = repo
+    @branch = branch
+  end
+
+  def extract_to(dir)
+    super
   end
 end
 
@@ -297,6 +351,11 @@ class Installer
 
     msg("Number of modified files: #{cnt}")
   end
+
+  def add_overlay(dir)
+    o = OverlayFS.new(dir)
+    o.create
+  end
 end
 
 class SelfUpdater
@@ -316,7 +375,7 @@ class SelfUpdater
         o.create
         print "Updating the script from version #{Version.string} to "
         File.write($PROGRAM_NAME, new_content)
-        system("#{$PROGRAM_NAME} --version")
+        system("#{$PROGRAM_NAME} version")
       end
     else
       $stderr.puts "ERROR: Download failed"
@@ -480,16 +539,16 @@ class PatchCommand
     repo = "yast/#{repo}" unless repo.include?("/")
 
     Dir.mktmpdir do |download_dir|
-      d = Downloader.new
-      d.download_gh_archive(repo, branch, download_dir)
+      d = GithubDownloader.new(repo, branch)
+      d.extract_to(download_dir)
       install_sources(download_dir)
     end
   end
 
   def install_from_tar(url)
     Dir.mktmpdir do |download_dir|
-      d = Downloader.new
-      d.download_tar_archive(url, download_dir)
+      d = TarballDownloader.new(url)
+      d.extract_to(download_dir)
       install_sources(download_dir)
     end
   end
@@ -540,7 +599,9 @@ class RemoteServer
     url = "http://#{host}/servers/index.json"
     u = URI(url)
     u.path = ""
-    JSON.parse(`curl -s #{url.shellescape}`).map do |port|
+
+    downloader = Downloader.new(url)
+    JSON.parse(downloader.download).map do |port|
       u.port = port
       u.to_s
     end
