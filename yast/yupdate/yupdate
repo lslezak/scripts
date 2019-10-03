@@ -19,7 +19,6 @@ require "uri"
 SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast/yupdate/yupdate"
 
 # TODO:
-#  - logging (to y2log so we can detect modified installer)
 #  - allow patching from a single server (optionally disable the server discovery)
 #  - add comments, code cleanup
 #  - verbose/quiet progress
@@ -41,7 +40,7 @@ SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast
 #
 #   yupdate help
 
-# A Ruby Logger which logs in usual Yast y2log formatting
+# A Ruby Logger which logs in usual Yast y2log format
 class YastLogger < Logger
   # redefine the format to the y2log format
   def format_message(severity, timestamp, progname, msg)
@@ -405,7 +404,7 @@ class Installer
           add_overlay(system_dir)
           FileUtils.rm_f(system_file) if File.symlink?(system_file)
           FileUtils.cp(path, system_file)
-          log.info "Updated: #{system_file}"
+          log.warn "Updated: #{system_file}"
           cnt += 1
         end
       else
@@ -418,7 +417,7 @@ class Installer
         end
 
         FileUtils.cp(path, system_file)
-        log.info "Added: #{system_file}"
+        log.warn "Added: #{system_file}"
         cnt += 1
       end
     end
