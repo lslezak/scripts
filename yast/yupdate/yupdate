@@ -40,10 +40,12 @@ SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast
 #
 #   yupdate help
 
-# A Ruby Logger which logs in usual Yast y2log format
+# A Ruby Logger which logs in usual Yast y2log format,
+# additionally it prints the messages also to STDOUT
 class YastLogger < Logger
   # redefine the format to the y2log format
   def format_message(severity, timestamp, progname, msg)
+    puts msg
     # remove the function name from the caller location
     location = caller(3).first.gsub(/:in `.*'$/, "")
     "#{timestamp.strftime(datetime_format)} #{severity} #{Socket.gethostname}(#{Process.pid}) #{progname} #{location} #{msg}\n"
@@ -263,7 +265,7 @@ class Downloader
               return response.read_body
             end
           else
-            puts "Download failed, error code: #{response.code}"
+            log.error "Download failed, error code: #{response.code}"
             return
           end
         end
@@ -286,7 +288,7 @@ class TarballDownloader < Downloader
           end
         end
       else
-        puts "Unknown MIME type: #{response["content-type"]}"
+        log.error "Unknown MIME type: #{response["content-type"]}"
       end
     end
   end
@@ -371,7 +373,7 @@ class Installer
         `rake install DESTDIR=#{target.shellescape} 2> /dev/null`
       end
     else
-      $stderr.puts "ERROR: Rakefile not found"
+      log.error "ERROR: Rakefile not found"
     end
   end
 
@@ -453,7 +455,7 @@ class SelfUpdater
         log.info "Updating the script from version #{Version.string} to #{new_version}"
       end
     else
-      $stderr.puts "ERROR: Download failed"
+      log.error "ERROR: Download failed"
     end
   end
 end
@@ -495,7 +497,7 @@ class InstSys
     mounts = `mount`
     return if mounts =~ /^tmpfs on \/ type tmpfs/
 
-    $stderr.puts "ERROR: This script can only work in the installation system (int-sys)!"
+    log.error "ERROR: This script can only work in the installation system (int-sys)!"
     exit 1
   end
 end
@@ -588,6 +590,8 @@ class ServersCommand
 end
 
 class PatchCommand
+  include YLogger
+
   def initialize(argv)
     @argv = argv
   end
@@ -636,7 +640,7 @@ class PatchCommand
     servers = remote.find(hostname)
 
     servers.each do |s|
-      puts "Installing from #{s}..."
+      log.info "Installing from #{s}..."
       url = "#{s}/archive/current.tar.gz"
       install_from_tar(url)
     end
@@ -658,12 +662,14 @@ class PatchCommand
 end
 
 class InvalidCommand
+  include YLogger
+
   def initialize(cmd)
     @cmd = cmd
   end
 
   def run
-    puts "ERROR: Invalid command: #{cmd}"
+    log.error "ERROR: Invalid command: #{cmd}"
     1
   end
 private
