@@ -20,6 +20,7 @@ SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast
 
 # TODO:
 #  - allow patching from a single server (optionally disable the server discovery)
+#  - automatically disable the YaST self-update after patching the system
 #  - error handling
 #  - add comments, code cleanup
 
