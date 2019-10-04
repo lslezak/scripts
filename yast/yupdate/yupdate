@@ -20,24 +20,40 @@ SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast
 
 # TODO:
 #  - allow patching from a single server (optionally disable the server discovery)
-#  - automatically disable the YaST self-update after patching the system
 #  - error handling
 #  - add comments, code cleanup
 
-# Commands:
-#   yupdate patch <github_repo> <branch>
-#   yupdate patch <url>
-#   yupdate patch <hostname:port>
-#
-#   yupdate overlay list
-#   yupdate overlay create [<dir>]
-#   yupdate overlay reset
-#   yupdate overlay files
-#   yupdate overlay diff
-#
-#   yupdate selfupdate
-#   yupdate version
-#   yupdate help
+class HelpCommand
+  def run
+    name = File.basename($PROGRAM_NAME)
+    puts <<-HELP
+This is a helper script for updating the YaST installer in the installation system.
+
+Usage:
+
+#{name} <command>
+
+Commands:
+
+patch <github_repo> <branch>
+patch <url>
+patch <hostname[:port]>
+overlay create [<dir>]  Create a new writable overlay for directory <dir>
+overlay list            Print the created writable overlays
+overlay reset           Remove all writable overlays restore the system to the original state
+overlay files           Print the changed files (addd or removed files are not listed)
+overlay diff
+selfupdate              Update the script itself from
+                        #{SELF_UPDATE_URL}
+version                 Print the script version
+help                    Print this help
+
+WARNING: This script is intended only for testing and development purposes,
+         using this tool makes the installation not supported!
+See more details in [FIXME URL]
+HELP
+  end
+end
 
 # A Ruby Logger which logs in usual Yast y2log format,
 # additionally it prints the messages also to STDOUT
@@ -124,6 +140,46 @@ class Version
   end
 end
 
+class InstallInf
+  attr_reader :path
+
+  def initialize(path = "/etc/install.inf")
+    @path = path
+    @values = File.read(path).lines.map(&:chomp)
+  end
+
+  def [](key)
+    line = find_line(key)
+    return nil unless line
+
+    line.match(/^#{Regexp.escape(key)}:\s*(.*)/)[1]
+  end
+
+  def []=(key, val)
+    line = find_line(key)
+
+    if line
+      # update the existing key
+      line.replace("#{key}: #{val}")
+    else
+      # add a new key
+      values << "#{key}: #{val}"
+    end
+  end
+
+  def write
+    File.write(path, values.join("\n"))
+  end
+
+private
+
+  attr_reader :values
+
+  def find_line(key)
+    values.find{ |l| l.start_with?(key + ":") }
+  end
+end
+
 # Class for managing the overlayfs mounts
 class OverlayFS
   include YLogger
@@ -156,7 +212,7 @@ class OverlayFS
     system("mount --bind #{dir.shellescape} #{origdir.shellescape}")
     # mark the mount as a private otherwise the overlay would propagate
     # through the bind mount and we would see the changed content here
-    system("mount --make-private #{origdir.shellescape} ")
+    system("mount --make-private #{origdir.shellescape}")
 
     system("mount -t overlay overlay -o lowerdir=#{dir.shellescape}," \
       "upperdir=#{upperdir.shellescape},workdir=#{workdir.shellescape} #{dir.shellescape}")
@@ -300,10 +356,6 @@ class GithubDownloader < TarballDownloader
     super("https://github.com/#{repo}/archive/#{branch}.tar.gz")
     @repo = repo
     @branch = branch
-  end
-
-  def extract_to(dir)
-    super
   end
 end
 
@@ -494,40 +546,8 @@ class InstSys
     mounts = `mount`
     return if mounts =~ /^tmpfs on \/ type tmpfs/
 
-    log.error "ERROR: This script can only work in the installation system (int-sys)!"
+    $stderr.puts "ERROR: This script can only work in the installation system (int-sys)!"
     exit 1
-  end
-end
-
-class HelpCommand
-  def run
-    name = File.basename($PROGRAM_NAME)
-    puts <<-HELP
-This is a helper script for updating the YaST installer in the installation system.
-
-Usage:
-
-#{name} <command>
-
-Commands:
-
-patch <github_repo> <branch>
-patch <url>
-patch <hostname[:port]>
-overlay create [<dir>]  Create a new writable overlay for directory <dir>
-overlay list            Print the created writable overlays
-overlay reset           Remove all writable overlays restore the system to the original state
-overlay files           Print the changed files (addd or removed files are not listed)
-overlay diff
-selfupdate              Update the script itself from
-                        #{SELF_UPDATE_URL}
-version                 Print the script version
-help                    Print this help
-
-WARNING: This script is intended only for testing and development purposes,
-         using this tool makes the installation not supported!
-See more details in [FIXME URL]
-HELP
   end
 end
 
@@ -611,25 +631,23 @@ class PatchCommand
       # otherwise treat it as a hostname providing a tarball server
       install_from_servers(arg1)
     end
+
+    # TODO: only when something has been updated?
+    disable_self_update
   end
+
+private
 
   def install_from_github(repo, branch)
     # add the default "yast" GitHub organization if missing
     repo = "yast/#{repo}" unless repo.include?("/")
-
-    Dir.mktmpdir do |download_dir|
-      d = GithubDownloader.new(repo, branch)
-      d.extract_to(download_dir)
-      install_sources(download_dir)
-    end
+    downloader = GithubDownloader.new(repo, branch)
+    install_tar(downloader)
   end
 
   def install_from_tar(url)
-    Dir.mktmpdir do |download_dir|
-      d = TarballDownloader.new(url)
-      d.extract_to(download_dir)
-      install_sources(download_dir)
-    end
+    downloader = TarballDownloader.new(url)
+    install_tar(downloader)
   end
 
   def install_from_servers(hostname)
@@ -656,6 +674,25 @@ class PatchCommand
     g = GemInstaller.new
     g.install_required_gems
   end
+
+  def install_tar(downloader)
+    Dir.mktmpdir do |download_dir|
+      downloader.extract_to(download_dir)
+      install_sources(download_dir)
+    end
+  end
+
+  # /etc/install.inf key
+  SELF_UPDATE_KEY = "SelfUpdate"
+
+  def disable_self_update
+    inf = InstallInf.new
+    return if inf[SELF_UPDATE_KEY] == "0"
+
+    log.warn "Disabling the YaST SelfUpdate feature in install.inf!"
+    inf[SELF_UPDATE_KEY] = "0"
+    inf.write
+  end
 end
 
 class InvalidCommand
@@ -666,7 +703,7 @@ class InvalidCommand
   end
 
   def run
-    log.error "ERROR: Invalid command: #{cmd}"
+    $stderr.puts "ERROR: Invalid command: #{cmd}"
     1
   end
 private
