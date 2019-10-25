@@ -36,21 +36,30 @@ Usage:
 Commands:
 
 patch <github_repo> <branch>
-patch <url>
+patch <tarball_url>
 patch <hostname[:port]>
-overlay create [<dir>]  Create a new writable overlay for directory <dir>
+
+overlay create [<dir>]  Create a new writable overlay for directory <dir>,
+                        if no directory is specified it creates overlays
+                        for the default YaST directories
 overlay list            Print the created writable overlays
-overlay reset           Remove all writable overlays restore the system to the original state
-overlay files           Print the changed files (addd or removed files are not listed)
-overlay diff
+
+overlay reset           Remove all writable overlays, restore the system to
+                        the original state
+
+overlay files           Print the changed files (removed files are not listed)
+
+overlay diff            Print the diff of the changed overlay files
+
 selfupdate              Update the script itself from
                         #{SELF_UPDATE_URL}
 version                 Print the script version
+
 help                    Print this help
 
 WARNING: This script is intended only for testing and development purposes,
          using this tool makes the installation not supported!
-See more details in [FIXME URL]
+See more details in [TODO README URL]
 HELP
   end
 end
@@ -337,7 +346,7 @@ class TarballDownloader < Downloader
   def extract_to(dir)
     download do |response|
       if response["content-type"] =~ /application\/(x-|)gzip/
-        IO.popen(["tar", "-C", dir, "-xz"], "wb") do |io|
+        IO.popen(["tar", "-C", dir, "--warning=no-timestamp", "-xz"], "wb") do |io|
           response.read_body do |chunk|
             io.write chunk
           end
