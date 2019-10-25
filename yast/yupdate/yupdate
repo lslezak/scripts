@@ -2,6 +2,7 @@
 
 # This script updates the YaST files in the inst-sys
 # with the files from GitHub.
+# See the help text below for the details.
 
 require "digest/sha1"
 require "fileutils"
@@ -19,9 +20,7 @@ require "uri"
 SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast/yupdate/yupdate"
 
 # TODO:
-#  - allow patching from a single server (optionally disable the server discovery)
 #  - error handling
-#  - add comments, code cleanup
 
 class HelpCommand
   def run
@@ -199,7 +198,7 @@ private
   end
 end
 
-# Class for managing the overlayfs mounts
+# Class for managing the OverlayFS mounts
 class OverlayFS
   include YLogger
 
@@ -371,6 +370,7 @@ class TarballDownloader < Downloader
   def extract_to(dir)
     download do |response|
       if response["content-type"] =~ /application\/(x-|)gzip/
+        # pipe the response body directly to the tar process
         IO.popen(["tar", "-C", dir, "--warning=no-timestamp", "-xz"], "wb") do |io|
           response.read_body do |chunk|
             io.write chunk
