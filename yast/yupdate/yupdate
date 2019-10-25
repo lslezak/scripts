@@ -103,10 +103,12 @@ class Y2Logger
 
   def initialize
     # Yast compatibility - log to home if not running as root
-    # (of if the file is not writable)
+    # (or if the file is not writable)
     if File.exist?(Y2LOGFILE)
+      # is the file writable?
       log_file = File.writable?(Y2LOGFILE) ? Y2LOGFILE : "#{ENV["HOME"]}/.y2log"
     else
+      # is the parent directory writable?
       log_file = File.writable?(File.dirname(Y2LOGFILE)) ? Y2LOGFILE : "#{ENV["HOME"]}/.y2log"
     end
 
@@ -140,23 +142,29 @@ module YLogger
   end
 end
 
+# version of the script
 class Version
   STRING = "0.0.1"
 
+  # @return [String] the version string including the SHA1 sum
+  #   to distinguish any change in the file
   def self.string
     sha = Digest::SHA1.hexdigest(File.read($PROGRAM_NAME))[0..7]
     "#{STRING} (#{sha})"
   end
 end
 
+# a simple /etc/install.inf parser/writer
 class InstallInf
   attr_reader :path
 
+  # read the file
   def initialize(path = "/etc/install.inf")
     @path = path
     @values = File.read(path).lines.map(&:chomp)
   end
 
+  # get value for the key
   def [](key)
     line = find_line(key)
     return nil unless line
@@ -164,6 +172,7 @@ class InstallInf
     line.match(/^#{Regexp.escape(key)}:\s*(.*)/)[1]
   end
 
+  # set value for the key
   def []=(key, val)
     line = find_line(key)
 
@@ -176,6 +185,7 @@ class InstallInf
     end
   end
 
+  # write the file back
   def write
     File.write(path, values.join("\n"))
   end
@@ -204,11 +214,13 @@ class OverlayFS
 
   attr_reader :dir
 
+  # manage the OverlayFS for this directory
   def initialize(dir)
     # expand symlinks
     @dir = File.realpath(dir)
   end
 
+  # create an OverlayFS overlay for this directory if it is not writable
   def create
     return if File.writable?(dir)
     log.warn "Adding overlay for #{dir}..."
@@ -227,6 +239,7 @@ class OverlayFS
       "upperdir=#{upperdir.shellescape},workdir=#{workdir.shellescape} #{dir.shellescape}")
   end
 
+  # delete the OverlayFS for this directory, all changes will be lost
   def delete
     log.debug "umount #{dir}"
     system "umount #{dir.shellescape}"
@@ -237,10 +250,12 @@ class OverlayFS
     FileUtils.rm_rf([ upperdir, workdir, origdir ])
   end
 
+  # print the modified files in this directory
   def print_files
     modified_files { |f, _modif, _orig| puts f}
   end
 
+  # print the diff for the changed files in this directory
   def print_diff
     modified_files do |f, _modif, orig|
       next unless File.exist?(f) && File.exist?(orig)
@@ -248,6 +263,7 @@ class OverlayFS
     end
   end
 
+  # find all OverlayFS mounts in the system
   def self.find_all
     mounts = `mount`
     mounts.lines.each_with_object([]) do |line, arr|
@@ -255,6 +271,7 @@ class OverlayFS
     end
   end
 
+  # return the default set of YaST overlays
   def self.default_overlays
     yast_overlays.map{ |o| new(o) }
   end
@@ -278,6 +295,7 @@ private
     File.join(OVERLAY_PREFIX, "original", dir_name)
   end
 
+  # find the modified files in this directory
   def modified_files(&block)
     return unless block_given?
 
@@ -302,6 +320,7 @@ private
   end
 end
 
+# a generic HTTP downloader
 class Downloader
   include YLogger
   attr_reader :url
@@ -310,6 +329,8 @@ class Downloader
     @url = url
   end
 
+  # download the file, returns the response body or if a block is
+  # given it passes the response to it
   def download(redirect = 10, &block)
     log.info "Downloading #{url}"
     uri = URI(url)
@@ -326,6 +347,7 @@ class Downloader
             if block_given?
               return block.call(response)
             else
+              # read the rest of the response (the body)
               return response.read_body
             end
           else
@@ -338,11 +360,14 @@ class Downloader
   end
 end
 
+# specialized tarball downloader, it can extract the downloaded
+# tarball on the fly (without saving the actual tarball) to the target directory
 class TarballDownloader < Downloader
   def initialize(url)
     super
   end
 
+  # start the downloading, extract the tarball to the specified directory
   def extract_to(dir)
     download do |response|
       if response["content-type"] =~ /application\/(x-|)gzip/
@@ -358,6 +383,8 @@ class TarballDownloader < Downloader
   end
 end
 
+# specialized tarball downloader which can download the sources
+# from GitHub (the "git" tool is missing in the inst-sys)
 class GithubDownloader < TarballDownloader
   attr_reader :repo, :branch
 
@@ -368,10 +395,12 @@ class GithubDownloader < TarballDownloader
   end
 end
 
+# installing Ruby gems using the "gem" tool
 class GemInstaller
   # we need this gem for running the "rake install" command
   NEEDED_GEM = "yast-rake".freeze
 
+  # is the gem installed?
   def gem_installed?(gem_name)
     gem(gem_name)
     true
@@ -379,6 +408,7 @@ class GemInstaller
     false
   end
 
+  # find the needed gems for running "rake install"
   def required_gems
     gems = [NEEDED_GEM]
     # handle the rake gem specifically, it is present in the system, but
@@ -387,10 +417,12 @@ class GemInstaller
     gems
   end
 
+  # install the YaST required gems
   def install_required_gems
     install_gems(required_gems)
   end
 
+  # install the specified gems
   def install_gems(gem_names)
     gem_names.each do |g|
       next if gem_installed?(g)
@@ -400,16 +432,18 @@ class GemInstaller
     end
   end
 
+  # make sure that the gem directory is writable
   def add_gem_overlay
     overlay = OverlayFS.new(Gem.dir)
     overlay.create
   end
 end
 
+# install the YaST sources using the "rake install" call
 class Installer
   include YLogger
 
-  # globs for ignored files
+  # globs for ignored some files
   SKIP_FILES = [
     # vim temporary files
     "*/.*swp",
@@ -423,6 +457,7 @@ class Installer
     "/usr/share/fillup-templates/*"
   ].freeze
 
+  # install the sources to the specified (temporary) directory
   def install_sources(src, target)
     log.info "Preparing files..."
     rakefile = Dir["#{src}/**/Rakefile"].first
@@ -437,10 +472,12 @@ class Installer
     end
   end
 
+  # should be the file skipped?
   def skip_file?(file)
     SKIP_FILES.any? { |glob| File.fnmatch?(glob, file) }
   end
 
+  # copy the changed files to the ins-sys
   def copy_to_system(src)
     log.info "Copying to system..."
     src_path = Pathname.new(src)
@@ -487,15 +524,18 @@ class Installer
     log.info "Number of modified files: #{cnt}"
   end
 
+  # ensure that the target directory is writable
   def add_overlay(dir)
     o = OverlayFS.new(dir)
     o.create
   end
 end
 
+# update the script itself with the latest version from GitHub
 class SelfUpdater
   include YLogger
 
+  # replace itself
   def self.update!
     downloader = Downloader.new(SELF_UPDATE_URL)
     new_content = downloader.download
@@ -518,6 +558,7 @@ class SelfUpdater
   end
 end
 
+# handler for the "overlay" command option
 class OverlayCommand
   def initialize(argv)
     @argv = argv
@@ -550,16 +591,23 @@ class OverlayCommand
   end
 end
 
+# inst-sys test
 class InstSys
+  # check if the script is running in the inst-sys,
+  # the script might not work as expected in an installed system
+  # and using OverlayFS is potentially dangerous
   def self.check!
     mounts = `mount`
+    # the inst-sys uses tmpfs (RAM disk) for the root
     return if mounts =~ /^tmpfs on \/ type tmpfs/
 
+    # exit immediately if running in an installed system
     $stderr.puts "ERROR: This script can only work in the installation system (int-sys)!"
     exit 1
   end
 end
 
+# parse the command line options
 class Options
   def self.parse(argv)
     command = argv.shift
@@ -586,18 +634,21 @@ class Options
   end
 end
 
+# handle the "version" command line option
 class VersionCommand
   def run
     puts "#{File.basename($PROGRAM_NAME)} #{Version.string}"
   end
 end
 
+# handle the "selfupdate" command line option
 class SelfUpdateCommand
   def run
     SelfUpdater.update!
   end
 end
 
+# handle the "servers" command line option
 class ServersCommand
   def initialize(argv)
     @argv = argv
@@ -615,6 +666,7 @@ class ServersCommand
   end
 end
 
+# handle the "patch" command line option
 class PatchCommand
   include YLogger
 
@@ -704,6 +756,7 @@ private
   end
 end
 
+# handle invalid command line options
 class InvalidCommand
   include YLogger
 
@@ -719,6 +772,7 @@ private
   attr_reader :cmd
 end
 
+# Query the remote server for the running servers
 class RemoteServer
   def find(host)
     host += ":8000" unless host.include?(":")
@@ -735,6 +789,7 @@ class RemoteServer
   end
 end
 
+# the main script application
 class Application
   def run(argv = ARGV)
     cmd = Options.parse(argv)
@@ -742,5 +797,6 @@ class Application
   end
 end
 
+# main
 app = Application.new
 app.run
