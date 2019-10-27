@@ -19,9 +19,7 @@ require "uri"
 
 SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast/yupdate/yupdate"
 
-# TODO:
-#  - error handling
-
+# handle the "help" command line option
 class HelpCommand
   def run
     name = File.basename($PROGRAM_NAME)
@@ -36,7 +34,9 @@ Commands:
 
 patch <github_repo> <branch>
 patch <tarball_url>
-patch <hostname[:port]>
+patch <host[:port]>
+
+servers <host[:port]>   List the rake servers running on the remote machine
 
 overlay create [<dir>]  Create a new writable overlay for directory <dir>,
                         if no directory is specified it creates overlays
@@ -659,10 +659,10 @@ class ServersCommand
 
     return 1 unless host
 
-    r = RemoteServer.new
-    servers = r.find(host)
-
-    puts servers
+    servers = RemoteServer.find(host)
+    servers.each do |s|
+      puts "URL: #{s.url}, directory: #{s.dir}"
+    end
   end
 end
 
@@ -712,12 +712,11 @@ private
   end
 
   def install_from_servers(hostname)
-    remote = RemoteServer.new
-    servers = remote.find(hostname)
+    servers = RemoteServer.find(hostname)
 
     servers.each do |s|
-      log.info "Installing from #{s}..."
-      url = "#{s}/archive/current.tar.gz"
+      log.info "Installing from #{s.url}..."
+      url = "#{s.url}/archive/current.tar.gz"
       install_from_tar(url)
     end
   end
@@ -746,6 +745,7 @@ private
   # /etc/install.inf key
   SELF_UPDATE_KEY = "SelfUpdate"
 
+  # disable the self update in the install.inf file
   def disable_self_update
     inf = InstallInf.new
     return if inf[SELF_UPDATE_KEY] == "0"
@@ -774,7 +774,14 @@ end
 
 # Query the remote server for the running servers
 class RemoteServer
-  def find(host)
+  attr_reader :url, :dir
+
+  def initialize(url, dir)
+    @url = url
+    @dir = dir
+  end
+
+  def self.find(host)
     host += ":8000" unless host.include?(":")
 
     url = "http://#{host}/servers/index.json"
@@ -782,9 +789,9 @@ class RemoteServer
     u.path = ""
 
     downloader = Downloader.new(url)
-    JSON.parse(downloader.download).map do |port|
-      u.port = port
-      u.to_s
+    JSON.parse(downloader.download).map do |server|
+      u.port = server["port"]
+      new(u.to_s, server["dir"])
     end
   end
 end
@@ -794,6 +801,10 @@ class Application
   def run(argv = ARGV)
     cmd = Options.parse(argv)
     cmd.run
+  # the global exception handler
+  rescue Exception => e
+    puts "ERROR: #{e.message}"
+    exit 1
   end
 end
 
