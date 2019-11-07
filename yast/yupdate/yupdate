@@ -143,7 +143,7 @@ end
 
 # version of the script
 class Version
-  STRING = "0.0.1"
+  STRING = "0.90.0"
 
   # @return [String] the version string including the SHA1 sum
   #   to distinguish any change in the file
@@ -540,16 +540,16 @@ class SelfUpdater
     downloader = Downloader.new(SELF_UPDATE_URL)
     new_content = downloader.download
     if new_content && !new_content.empty?
-      old_content = File.read($PROGRAM_NAME)
+      old_content = File.read(__FILE__)
 
       if old_content == new_content
         log.info "No changes found, the script is up to date"
       else
-        o = OverlayFS.new(File.dirname($PROGRAM_NAME))
+        o = OverlayFS.new(File.dirname(__FILE__))
         o.create
-        File.write($PROGRAM_NAME, new_content)
+        File.write(__FILE__, new_content)
 
-        new_version = `#{$PROGRAM_NAME} version`
+        new_version = `#{__FILE__} version`
         log.info "Updating the script from version #{Version.string} to #{new_version}"
       end
     else
@@ -602,7 +602,7 @@ class InstSys
     return if mounts =~ /^tmpfs on \/ type tmpfs/
 
     # exit immediately if running in an installed system
-    $stderr.puts "ERROR: This script can only work in the installation system (int-sys)!"
+    $stderr.puts "ERROR: This script can only work in the installation system (inst-sys)!"
     exit 1
   end
 end
@@ -808,6 +808,11 @@ class Application
   end
 end
 
-# main
-app = Application.new
-app.run
+
+# do not execute the script when the file is loaded by some other script
+# e.g. by a test, allow testing parts of the code without executing it as a whole
+if __FILE__ == $PROGRAM_NAME
+  # main
+  app = Application.new
+  app.run
+end
