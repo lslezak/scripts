@@ -350,8 +350,7 @@ class Downloader
               return response.read_body
             end
           else
-            log.error "Download failed, error code: #{response.code}"
-            return
+            raise "Download failed, error code: #{response.code}"
           end
         end
       end
@@ -377,7 +376,7 @@ class TarballDownloader < Downloader
           end
         end
       else
-        log.error "Unknown MIME type: #{response["content-type"]}"
+        raise "Unknown MIME type: #{response["content-type"]}"
       end
     end
   end
@@ -560,7 +559,7 @@ class SelfUpdater
         log.info "Updating the script from version #{Version.string} to #{new_version}"
       end
     else
-      log.error "ERROR: Download failed"
+      raise "ERROR: Download failed, empty content"
     end
   end
 end
@@ -772,8 +771,7 @@ class InvalidCommand
   end
 
   def run
-    $stderr.puts "ERROR: Invalid command: #{cmd}"
-    1
+    raise "Invalid command: #{cmd}"
   end
 private
   attr_reader :cmd
