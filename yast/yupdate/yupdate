@@ -460,6 +460,13 @@ class Installer
   # install the sources to the specified (temporary) directory
   def install_sources(src, target)
     log.info "Preparing files..."
+
+    # check for Makefile.cvs, we cannot install packages using autotools
+    makefile_cvs = Dir["#{src}/**/Makefile.cvs"].first
+    if makefile_cvs
+      raise "Found Makefile.cvs, autotools based packages cannot be installed"
+    end
+
     rakefile = Dir["#{src}/**/Rakefile"].first
 
     if rakefile
@@ -468,7 +475,7 @@ class Installer
         `rake install DESTDIR=#{target.shellescape} 2> /dev/null`
       end
     else
-      log.error "ERROR: Rakefile not found"
+      raise "Rakefile not found, cannot install the package"
     end
   end
 
