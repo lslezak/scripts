@@ -399,6 +399,13 @@ class GemInstaller
   # we need this gem for running the "rake install" command
   NEEDED_GEM = "yast-rake".freeze
 
+  # install the YaST required gems
+  def install_required_gems
+    install_gems(required_gems)
+  end
+
+private
+
   # is the gem installed?
   def gem_installed?(gem_name)
     gem(gem_name)
@@ -414,11 +421,6 @@ class GemInstaller
     # the /usr/bin/rake file is missing
     gems << "rake" if !File.exist?("/usr/bin/rake")
     gems
-  end
-
-  # install the YaST required gems
-  def install_required_gems
-    install_gems(required_gems)
   end
 
   # install the specified gems
