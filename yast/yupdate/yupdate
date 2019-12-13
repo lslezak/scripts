@@ -643,7 +643,7 @@ end
 # handle the "version" command line option
 class VersionCommand
   def run
-    puts "#{File.basename($PROGRAM_NAME)} #{Version.string}"
+    puts "#{File.basename(__FILE__)} #{Version.string}"
   end
 end
 
