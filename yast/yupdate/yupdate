@@ -17,7 +17,8 @@ require "socket"
 require "tmpdir"
 require "uri"
 
-SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/master/yast/yupdate/yupdate"
+# FIXME: rename yupdate_refactoring to master before merging
+SELF_UPDATE_URL = "https://raw.githubusercontent.com/lslezak/scripts/yupdate_refactoring/yast/yupdate/yupdate"
 
 # handle the "help" command line option
 class HelpCommand
