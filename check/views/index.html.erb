@@ -21,6 +21,14 @@
 <br>
 
 <h2>
+  Regular Checks
+</h2>
+<div class="indent">
+<% renderer = Y2status::ErbRenderer.new("_checks.html.erb") %>
+<%= renderer.render %>
+</div>
+
+<h2>
   <img src="https://ci.opensuse.org/static/059b3e24/images/headshot.png" alt="Jenkins icon" height="20">
   Jenkins Status
 </h2>
