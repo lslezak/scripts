@@ -5,12 +5,19 @@ jenkins:
   # Jenkins servers
   - label: External Jenkins - YaST
     url: https://ci.opensuse.org/view/Yast
+    ignore:
+      - clang
+      - werror
   - label: External Jenkins - libyui
     url: https://ci.opensuse.org/view/libyui
+    ignore:
+      - gtk
 
   - label: Internal Jenkins - YaST
     url: https://ci.suse.de/view/YaST
     internal: true
+    ignore:
+      - yast-autoyast-profiles-test
   - label: Internal Jenkins - libyui
     url: https://ci.suse.de/view/libyui
     internal: true

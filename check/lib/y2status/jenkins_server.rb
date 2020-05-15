@@ -5,11 +5,14 @@ module Y2status
     include Downloader
     include Reporter
 
-    attr_reader :base_url, :label, :error
+    attr_reader :base_url, :label, :error, :ignore
 
-    def initialize(label, base_url)
+    def initialize(label, base_url, ignore)
+      puts "#{base_url}: #{ignore.inspect}"
       @label = label
       @base_url = base_url
+      @ignore = ignore || []
+      @ignore.map!{|i| Regexp.new(i)}
     end
 
     def error?
@@ -45,14 +48,19 @@ module Y2status
 
       data = JSON.parse(body)
 
-      if data.key?("jobs")
-        # list of jobs
-        data["jobs"].map do |s|
-          JenkinsJob.new(self, s["name"], s["color"])
+      # list of jobs or a single job
+      jobs = data.key?("jobs") ? data["jobs"] : data
+
+      if ignore
+        jobs.reject! do |j|
+          next true unless j["name"] && j["color"]
+          ignore.any?{|i| j["name"] =~ i}
         end
-      else
-        # a single job
-        [JenkinsJob.new(self, data["name"], data["color"])]
+      end
+
+      jobs.map do |s|
+        puts "s: #{s.inspect}"
+        JenkinsJob.new(self, s["name"], s["color"])
       end
     end
   end

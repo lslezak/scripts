@@ -27,7 +27,7 @@ module Y2status
     def jenkins_servers
       (configuration["jenkins"] || []).each_with_object([]) do |j, list|
         next if Options.instance.public_only && j["internal"]
-        list << JenkinsServer.new(j["label"], j["url"])
+        list << JenkinsServer.new(j["label"], j["url"], j["ignore"])
       end
     end
 
