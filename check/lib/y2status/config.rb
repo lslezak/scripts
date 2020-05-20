@@ -34,7 +34,8 @@ module Y2status
     def obs_projects
       (configuration["obs"] || []).each_with_object([]) do |o, list|
         next if Options.instance.public_only && o["internal"]
-        list << ObsProject.new(o["project"], api: o["api"], packages: o["packages"])
+        list << ObsProject.new(o["project"], api: o["api"], packages: o["packages"],
+        ignore: o["ignore"])
       end
     end
 

@@ -36,6 +36,17 @@ obs:
   - project: YaST:SLE-12:SP4
   - project: YaST:SLE-12:SP3
   - project: filesystems:snapper
+    ignore:
+      - CentOS
+      - Debian_[7-9]
+      - Fedora_2[0-6]
+      - SLE_12
+      - openSUSE_1
+      - openSUSE_42
+      - openSUSE_Leap_42
+      - xUbuntu_1[0-8]
+      - ScientificLinux_7
+      - RHEL_7
   - project: devel:libraries:libyui
   - project: system:install:head
     # only the packages maintained by the YaST team
@@ -53,6 +64,8 @@ obs:
   - project: Devel:YaST:Head
     api: https://api.suse.de
     internal: true
+    ignore:
+      - SUSE_Factory_Head
 
   - project: Devel:YaST:CASP:4.0
     api: https://api.suse.de

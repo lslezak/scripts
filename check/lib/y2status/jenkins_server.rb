@@ -12,7 +12,7 @@ module Y2status
       @label = label
       @base_url = base_url
       @ignore = ignore || []
-      @ignore.map!{|i| Regexp.new(i)}
+      @ignore.map! { |i| Regexp.new(i) }
     end
 
     def error?
@@ -54,7 +54,7 @@ module Y2status
       if ignore
         jobs.reject! do |j|
           next true unless j["name"] && j["color"]
-          ignore.any?{|i| j["name"] =~ i}
+          ignore.any? { |i| j["name"] =~ i }
         end
       end
 
