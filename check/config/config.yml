@@ -82,10 +82,3 @@ obs:
   - project: Devel:YaST:SLE-12-SP3
     api: https://api.suse.de
     internal: true
-
-docker:
-  # Docker Hub images
-  - yastdevel/ruby
-  - yastdevel/cpp
-  - yastdevel/libstorage-ng
-  - libyui/devel

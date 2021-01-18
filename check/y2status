@@ -17,8 +17,7 @@ config = Y2status::Config.new
 page_renderer = Y2status::ErbRenderer.new("index.html.erb")
 body = page_renderer.render(
   jenkins_servers: config.jenkins_servers,
-  obs_projects:    config.obs_projects,
-  docker_images:   config.docker_images
+  obs_projects:    config.obs_projects
 )
 
 # render the whole HTML page

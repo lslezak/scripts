@@ -61,10 +61,6 @@ a:hover .badge {
   background-color: #fde88c;
 }
 
-.docker_icon {
-  vertical-align: text-bottom;
-}
-
 #new_issues_count {
   margin-left: 20px;
 }

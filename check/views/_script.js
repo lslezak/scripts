@@ -54,7 +54,6 @@ function create_notification(new_issues) {
   var jenkins_failures = 0;
   var obs_failures = 0;
   var obs_declined_sr = 0;
-  var docker_failures = 0;
 
   new_issues.forEach( (id) => {
     console.log(id);
@@ -64,8 +63,6 @@ function create_notification(new_issues) {
       obs_failures++;
     else if (id.match(/^failure_id:declined_sr:/))
       obs_declined_sr++;
-    else if (id.match(/^failure_id:docker:/))
-      docker_failures++;
     else
       console.warn("Unknown issue id: ", id);
   });
@@ -78,8 +75,6 @@ function create_notification(new_issues) {
     message += amount_str(obs_failures, "new OBS build failure") + "\n";
   if (obs_declined_sr > 0)
     message += amount_str(obs_declined_sr, "new declined OBS submit request") + "\n";
-  if (docker_failures > 0)
-    message += amount_str(docker_failures, "new Docker build failure") + "\n";
 
   var options = {
     body: message,

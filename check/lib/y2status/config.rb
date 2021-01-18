@@ -39,12 +39,6 @@ module Y2status
       end
     end
 
-    def docker_images
-      (configuration["docker"] || []).each_with_object([]) do |i, list|
-        list << DockerImage.new(i)
-      end
-    end
-
   private
 
     def load_config

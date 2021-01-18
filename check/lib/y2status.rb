@@ -8,8 +8,6 @@ require "y2status/helpers"
 require "y2status/log_analyzer"
 
 require "y2status/config"
-require "y2status/docker_build"
-require "y2status/docker_image"
 require "y2status/erb_params"
 require "y2status/erb_renderer"
 require "y2status/jenkins_job"

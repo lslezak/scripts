@@ -1,4 +1,6 @@
 
+require "json"
+
 module Y2status
   # Jenkins server
   class JenkinsServer

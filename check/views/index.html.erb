@@ -3,8 +3,8 @@
   YaST Status Overview
 </h1>
 <div class="indent">
-<% total_failures = (jenkins_servers + obs_projects + docker_images).map(&:issues).sum %>
-<% errors = (jenkins_servers + obs_projects + docker_images).map(&:error?).any? %>
+<% total_failures = (jenkins_servers + obs_projects).map(&:issues).sum %>
+<% errors = (jenkins_servers + obs_projects).map(&:error?).any? %>
 <% if total_failures.zero? && !errors %>
   <span class="badge badge_success">
     Wow! Everything is green!
@@ -42,12 +42,4 @@
 <div class="indent">
 <% renderer = Y2status::ErbRenderer.new("_obs.html.erb") %>
 <%= renderer.render(obs_projects: obs_projects) %>
-</div>
-
-<h2>
-  Docker Hub Status
-</h2>
-<div class="indent">
-<% renderer = Y2status::ErbRenderer.new("_docker.html.erb") %>
-<%= renderer.render(docker_images: docker_images) %>
 </div>
