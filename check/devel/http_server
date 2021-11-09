@@ -1,6 +1,0 @@
-#! /bin/bash
-
-dir_path=$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd -P)
-
-# this exports the current directory via http://localhost:8000
-ruby -run -ehttpd "$dir_path" -p8000
